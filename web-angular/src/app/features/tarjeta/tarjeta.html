@@ -1,0 +1,174 @@
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <div class="page-kicker">Check-in sin papel</div>
+      <h1 class="page-heading">Registration Card digital</h1>
+      <p class="page-subtitle">Reserva {{ confirmation }} · PDF oficial de OPERA Cloud</p>
+    </div>
+    <a class="btn btn-outline-secondary" routerLink="/huesped">Volver al inicio</a>
+  </div>
+  @if (loading) {
+    <div class="panel empty-state" role="status"><div class="spinner-border text-primary mb-3"></div><div>Consultando la reservación en OPERA…</div></div>
+  } @else if (draftUnavailable) {
+    <div class="alert alert-danger" role="alert">{{ message }}</div>
+  } @else if (!reservation) {
+    <div class="alert alert-warning">No se encontró la reservación {{ confirmation }}.</div>
+  } @else {
+    @if (draftUnavailable) { <div class="alert alert-danger" role="alert">No se pudo recuperar el avance. Recarga la página antes de capturar firmas para evitar perder datos.</div> }
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+      <button class="btn btn-outline-primary" [disabled]="working || draftUnavailable" (click)="saveProgress()">{{ working ? 'Guardando…' : 'Guardar avance' }}</button>
+      <span role="status">{{ savedAt ? 'Avance guardado: ' + savedAt : 'Las firmas confirmadas se guardan en el servidor.' }}</span>
+    </div>
+    <fieldset [disabled]="working || draftUnavailable" (input)="invalidatePreview()">
+    <ol class="workflow-steps" aria-label="Progreso de la tarjeta">
+      @for (s of steps; track s.n) {
+        <li [class.active]="s.n === step" [class.complete]="s.n < step"><span>{{ s.n < step ? '✓' : s.n }}</span>{{ s.label }}</li>
+      }
+    </ol>
+    @if (message) { <div class="alert" [class.alert-danger]="isError" [class.alert-success]="!isError" role="alert">{{ message }}</div> }
+    <div class="row g-4">
+      <aside class="col-lg-4">
+        <div class="panel reservation-summary">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+            <div><div class="small text-secondary">Huésped principal</div><h2 class="section-title mt-1">{{ reservation.guest.fullName }}</h2></div>
+            <span class="badge text-bg-success">{{ reservation.reservationStatus }}</span>
+          </div>
+          <dl class="summary-list">
+            <dt>Habitación</dt><dd>{{ dash(reservation.roomStay.roomId) }}</dd>
+            <dt>Room type</dt><dd>{{ dash(reservation.roomStay.roomType) }}</dd>
+            <dt>Llegada</dt><dd>{{ dash(reservation.roomStay.arrivalDate) }}</dd>
+            <dt>Salida</dt><dd>{{ dash(reservation.roomStay.departureDate) }}</dd>
+            <dt>Huéspedes</dt><dd>{{ reservation.roomStay.adultCount }} adultos · {{ reservation.roomStay.childCount }} menores</dd>
+          </dl>
+          <div class="template-note mt-3">La plantilla se seleccionará automáticamente a partir del room type.</div>
+        </div>
+      </aside>
+      <section class="col-lg-8">
+        <div class="panel workflow-panel">
+          @if (step === 1) {
+            <h2 class="section-title">Datos del huésped</h2>
+            <p class="text-secondary">Confirma la información que aparecerá en el documento. Esto no actualiza el perfil de OPERA.</p>
+            <div class="row g-3 mt-1">
+              <div class="col-md-6"><label class="form-label">Correo electrónico</label><input class="form-control" type="email" [(ngModel)]="input.email"><div class="form-text">Enviaremos aquí la tarjeta firmada y los documentos vigentes de su estancia.</div></div>
+              <div class="col-md-6"><label class="form-label">Teléfono celular</label><input class="form-control" [(ngModel)]="input.cellPhone"></div>
+              <div class="col-md-6"><label class="form-label">Nacionalidad</label><input class="form-control" [(ngModel)]="input.citizenship"></div>
+              <div class="col-md-6"><label class="form-label">Ciudad</label><input class="form-control" [(ngModel)]="input.city"></div>
+              <div class="col-md-6"><label class="form-label">Estado</label><input class="form-control" [(ngModel)]="input.state"></div>
+              <div class="col-md-6"><label class="form-label">País</label><input class="form-control" [(ngModel)]="input.country"></div>
+            </div>
+            <div class="workflow-actions"><span></span><button class="btn btn-primary" (click)="step = 2">Continuar con ocupantes</button></div>
+          } @else if (step === 2) {
+            <div class="d-flex justify-content-between gap-3 align-items-start">
+              <div><h2 class="section-title">Ocupantes autorizados</h2><p class="text-secondary">Agrega únicamente adultos que firmarán la autorización de cargos.</p></div>
+              <span class="capacity-pill">{{ input.occupants.length }} / 8</span>
+            </div>
+            <div class="occupant-list mt-3">
+              @for (o of input.occupants; track o.clientId) {
+                <div class="occupant-row">
+                  <span class="occupant-number">{{ $index + 1 }}</span>
+                  <div class="form-check occupant-select"><input class="form-check-input" type="checkbox" [(ngModel)]="o.selected" [disabled]="!!o.signaturePngBase64" [attr.aria-label]="'Seleccionar a ' + (o.name || 'ocupante')"></div>
+                  <div class="flex-grow-1"><input class="form-control" placeholder="Nombre completo" [(ngModel)]="o.name" [readonly]="!!o.signaturePngBase64"></div>
+                  <button type="button" class="btn btn-outline-danger" [disabled]="!canRemove($index)" (click)="removeOccupant($index)">Quitar</button>
+                </div>
+              }
+            </div>
+            <div class="border rounded p-3 mt-4">
+              <h3 class="h6">Agregar un adulto a la reserva de OPERA</h3>
+              <p class="small text-secondary">Buscaremos primero si el huésped ya tiene perfil.</p>
+              <div class="row g-2">
+                <div class="col-md-5"><label class="form-label">Nombre(s)</label><input class="form-control" maxlength="40" [(ngModel)]="operaGiven"></div>
+                <div class="col-md-5"><label class="form-label">Apellido(s)</label><input class="form-control" maxlength="40" [(ngModel)]="operaSurname"></div>
+                <div class="col-md-2 d-flex align-items-end"><button class="btn btn-outline-primary w-100" [disabled]="operaWorking" (click)="lookupGuest()">Buscar</button></div>
+              </div>
+              @if (lookup?.matches?.length) {
+                <div class="alert alert-info mt-3 mb-0"><strong>OPERA encontró perfiles existentes.</strong>
+                  <div class="list-group mt-2">
+                    @for (m of lookup.matches; track m.profileId) {
+                      <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" [disabled]="operaWorking" (click)="previewGuest(m.profileId)">
+                        <span>{{ m.fullName }}</span><span class="badge text-bg-light">Profile {{ m.profileId }}</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+              @if (lookup?.newProfilePreview) {
+                <div class="alert alert-warning mt-3 mb-0"><strong>No se encontró un perfil existente.</strong><br>
+                  Se creará <strong>{{ lookup.newProfilePreview.requestedProfile.fullName }}</strong>. Adultos: {{ lookup.newProfilePreview.currentAdults }} → {{ lookup.newProfilePreview.proposedAdults }}.
+                  @if (lookup.newProfilePreview.canApply) {
+                    <div class="form-check mt-2"><input class="form-check-input" type="checkbox" [(ngModel)]="confirmOpera" id="cnew"><label class="form-check-label" for="cnew">Confirmo el nombre y que este adulto pertenece a la reserva.</label></div>
+                    <button class="btn btn-danger mt-2" [disabled]="!confirmOpera || operaWorking" (click)="createGuest()">Crear Profile ID y vincular</button>
+                  }
+                </div>
+              }
+              @if (guestPreview) {
+                <div class="alert alert-info mt-3 mb-0"><strong>{{ guestPreview.requestedProfile.fullName }}</strong> · Profile {{ guestPreview.requestedProfile.profileId }}<br>
+                  Adultos: {{ guestPreview.currentAdults }} → {{ guestPreview.proposedAdults }}. {{ guestPreview.validationMessage }}
+                  @if (guestPreview.canApply) {
+                    <div class="form-check mt-2"><input class="form-check-input" type="checkbox" [(ngModel)]="confirmOpera" id="cex"><label class="form-check-label" for="cex">Confirmo que este adulto pertenece a la reserva.</label></div>
+                    <button class="btn btn-danger mt-2" [disabled]="!confirmOpera || operaWorking" (click)="applyGuest()">Vincular adulto en OPERA</button>
+                  }
+                </div>
+              }
+            </div>
+            @if (input.occupants.length < 8) { <button type="button" class="btn btn-outline-primary mt-3" (click)="addOccupant()">+ Agregar ocupante</button> }
+            <div class="workflow-actions"><button class="btn btn-outline-secondary" (click)="step = 1">Atrás</button><button class="btn btn-primary" (click)="startSignatures()">Continuar con firmas</button></div>
+          } @else if (step === 3) {
+            <h2 class="section-title">Selecciona quién firma ahora</h2>
+            <p class="text-secondary">Los pendientes pueden firmar después. Cada firma confirmada se guarda y conserva su lugar en la tarjeta.</p>
+            <div class="signature-progress">{{ signedCount }} de {{ totalSigners }} firmas capturadas</div>
+            <div class="row g-3 mt-1">
+              <div class="col-md-6"><div class="border rounded p-3 h-100">
+                <strong>{{ input.primaryGuestName }} · Titular</strong>
+                @if (input.primarySignaturePngBase64) {
+                  <div class="text-success">Firmado</div><img [src]="input.primarySignaturePngBase64" alt="Firma del titular" class="img-fluid" style="max-height:80px">
+                } @else {
+                  <div class="form-check mt-2"><input id="select-primary" type="checkbox" class="form-check-input" [(ngModel)]="primarySelected"><label for="select-primary" class="form-check-label">Firma ahora</label></div>
+                  <button class="btn btn-outline-primary mt-2" [disabled]="!primarySelected" (click)="selectSigner(-1)">Firmar</button>
+                }
+              </div></div>
+              @for (o of input.occupants; track o.clientId; let i = $index) {
+                <div class="col-md-6"><div class="border rounded p-3 h-100">
+                  <strong>{{ o.name || 'Ocupante ' + (i + 1) }}</strong>
+                  @if (o.signaturePngBase64) {
+                    <div class="text-success">Firmado</div><img [src]="o.signaturePngBase64" [alt]="'Firma de ' + o.name" class="img-fluid" style="max-height:80px">
+                  } @else {
+                    <div class="form-check mt-2"><input [id]="'signer-' + o.clientId" type="checkbox" class="form-check-input" [(ngModel)]="o.selected"><label [for]="'signer-' + o.clientId" class="form-check-label">Firma ahora</label></div>
+                    <button class="btn btn-outline-primary mt-2" [disabled]="!o.selected || !o.name.trim()" (click)="selectSigner(i)">Firmar</button>
+                  }
+                </div></div>
+              }
+            </div>
+            @if (activeSigner !== null) {
+              <div class="border rounded p-3 mt-4">
+                <h3 class="h5">Firma de {{ currentSigner }}</h3>
+                <app-signature-canvas #pad />
+                <div class="d-flex flex-wrap gap-3 mt-3">
+                  <button class="btn btn-outline-secondary" (click)="pad.clear()">Limpiar</button>
+                  <button class="btn btn-primary" (click)="capture()">Confirmar y guardar firma</button>
+                  <button class="btn btn-link" (click)="activeSigner = null">Cancelar captura</button>
+                </div>
+              </div>
+            }
+            <div class="workflow-actions"><button class="btn btn-outline-secondary" (click)="step = 2; activeSigner = null">Volver a ocupantes</button><button class="btn btn-primary" [disabled]="signedCount === 0" (click)="step = 4; activeSigner = null">Revisar tarjeta</button></div>
+          } @else {
+            <h2 class="section-title">Revisión y envío</h2>
+            <p class="text-secondary">Genera el PDF final para revisarlo antes de crear el adjunto en OPERA.</p>
+            <div class="review-grid">
+              <div><span>Firmas capturadas</span><strong>{{ signedCount }} de {{ totalSigners }}</strong></div>
+              <div><span>Correo</span><strong>{{ dash(input.email) }}</strong></div>
+              <div class="form-check mt-3"><input id="mc" class="form-check-input" type="checkbox" [(ngModel)]="input.marketingConsent"><label class="form-check-label" for="mc">Acepto recibir promociones y beneficios de Vidanta junto con mis documentos.</label></div>
+              <div><span>Celular</span><strong>{{ dash(input.cellPhone) }}</strong></div>
+            </div>
+            <div class="d-grid d-md-flex gap-3 mt-4">
+              <button class="btn btn-outline-primary" [disabled]="working" (click)="preview()">{{ working ? 'Generando…' : 'Descargar vista previa' }}</button>
+              <button class="btn btn-primary" [disabled]="!previewReady || !confirmSend || working || !input.primarySignaturePngBase64" (click)="upload()">Enviar a OPERA</button>
+            </div>
+            <p class="small text-secondary mt-3">Puedes guardar el avance con firmas pendientes. Para enviar a OPERA se requiere la firma del titular; los pendientes conservarán su espacio en el PDF.</p>
+            <div class="form-check mt-4"><input id="cs" class="form-check-input" type="checkbox" [(ngModel)]="confirmSend"><label class="form-check-label" for="cs">Revisé el documento y confirmo que las firmas y datos son correctos.</label></div>
+            @if (!previewReady) { <div class="small text-secondary mt-2">Primero descarga y revisa la vista previa.</div> }
+            <div class="workflow-actions"><button class="btn btn-outline-secondary" (click)="step = 3; activeSigner = null; previewReady = false; confirmSend = false">Volver a firmantes</button><span></span></div>
+          }
+        </div>
+      </section>
+    </div>
+    </fieldset>
+  }

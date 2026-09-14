@@ -1,0 +1,28 @@
+<div class="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-4">
+  <div><div class="page-kicker">Catálogo de descuentos</div><h1 class="page-heading">Códigos VIDA</h1><p class="page-subtitle">Consulta los códigos y sus descripciones tal como están registrados en OPERA.</p></div>
+  <button class="btn btn-primary" [disabled]="loading" (click)="refresh()">{{ loading ? 'Consultando…' : 'Actualizar catálogo' }}</button>
+</div>
+@if (error) { <div class="alert alert-danger" role="alert">{{ error }} @if (loaded) { <span>Se conservan los resultados de la última consulta correcta.</span> }</div> }
+@if (loading) { <div class="alert alert-info" role="status">Consultando catálogo VIDA_PROMOTIONSTSW…</div> }
+<section class="panel">
+  <div class="row g-3 mb-3">
+    <div class="col-md-7"><label for="udf-search" class="form-label">Buscar por palabras o partes del código</label><input id="udf-search" class="form-control" [(ngModel)]="query" (ngModelChange)="applyFilter()" placeholder="Ej. FLASH, INTERCONEXION, créditos" type="search"></div>
+    <div class="col-md-3"><label for="udf-field" class="form-label">Buscar en</label><select id="udf-field" class="form-select" [(ngModel)]="field" (ngModelChange)="applyFilter()"><option value="all">Código y descripción</option><option value="code">Código</option><option value="description">Descripción</option></select></div>
+    <div class="col-md-2 d-flex align-items-end"><button class="btn btn-outline-secondary w-100" (click)="clear()">Limpiar</button></div>
+  </div>
+  <div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><span role="status">{{ filtered.length }} coincidencias de {{ rows.length }} códigos cargados</span>@if (updatedAt) { <small class="text-secondary">Actualizado: {{ updatedAt }}</small> }</div>
+  <div class="table-responsive">
+    <table class="table table-striped align-middle"><thead><tr><th scope="col">Código completo</th><th scope="col">Descripción completa</th><th scope="col">Orden</th></tr></thead><tbody>
+      @for (row of visible; track row.code) {
+        <tr><td style="min-width:180px;max-width:350px;overflow-wrap:anywhere"><code>{{ row.code }}</code></td><td style="min-width:260px;white-space:pre-wrap;overflow-wrap:anywhere">{{ row.description || 'Sin descripción' }}</td><td>{{ row.displayOrder }}</td></tr>
+      } @empty {
+        <tr><td colspan="3" class="text-center py-4">{{ loading ? 'Cargando…' : !loaded ? 'Actualiza el catálogo para consultar los códigos.' : 'No hay códigos que coincidan con la búsqueda.' }}</td></tr>
+      }
+    </tbody></table>
+  </div>
+  <nav aria-label="Páginas del catálogo" class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <label class="d-flex align-items-center gap-2">Por página <select class="form-select" [(ngModel)]="pageSize" (ngModelChange)="page = 1"><option [ngValue]="25">25</option><option [ngValue]="50">50</option><option [ngValue]="100">100</option></select></label>
+    <span>{{ first }}–{{ last }} de {{ filtered.length }} · Página {{ page }} de {{ pages }}</span>
+    <div class="d-flex gap-2"><button class="btn btn-outline-primary" [disabled]="page <= 1" (click)="page = page - 1">Anterior</button><button class="btn btn-outline-primary" [disabled]="page >= pages" (click)="page = page + 1">Siguiente</button></div>
+  </nav>
+</section>

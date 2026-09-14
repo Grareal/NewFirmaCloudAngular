@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Requisitos de Tarjeta de Firma - Opera Cloud</title>
+<style>
+:root{--g:#096b65;--bg:#f3f7f8;--line:#c9d8dc;--text:#123047;--muted:#687f89}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{background:#fff;border-bottom:1px solid #dbe5e8;padding:18px 28px;display:flex;justify-content:space-between;align-items:center}
+h1{font-size:22px;margin:0}.tag{background:#e6f3f1;color:var(--g);padding:7px 11px;border-radius:20px;font-weight:bold;font-size:12px}
+.wrap{max-width:1250px;margin:24px auto;padding:0 20px}.intro,.card{background:#fff;border:1px solid #dbe5e8;border-radius:15px;box-shadow:0 5px 18px #193a4a12}
+.intro{padding:18px 20px;margin-bottom:18px}.intro p{margin:6px 0;color:var(--muted);line-height:1.45}
+.grid{display:grid;grid-template-columns:330px 1fr;gap:18px}.card{padding:18px}.card h2{font-size:16px;margin:0 0 14px}
+.row{display:flex;justify-content:space-between;border-bottom:1px solid #edf1f2;padding:9px 0}.label{color:var(--muted)}.value{font-weight:bold}
+.notice{background:#edf7f5;border-left:4px solid var(--g);padding:11px 13px;border-radius:7px;margin:12px 0;color:#35555e;font-size:13px}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}button{border:0;border-radius:9px;padding:10px 13px;font-weight:bold;cursor:pointer}
+.primary{background:var(--g);color:white}.secondary{background:#fff;color:var(--g);border:1px solid var(--g)}.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tab{background:#eef4f4;color:#43636b;padding:8px 12px;border-radius:18px;font-size:13px;font-weight:bold}.tab.active{background:var(--g);color:white}
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin:12px 0}.counter{font-weight:bold;color:var(--g)}
+.signers{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.signer{border:1px solid var(--line);border-radius:12px;padding:13px}.signer.signed{border-color:#8fd0b2;background:#f5fbf8}
+.top{display:flex;justify-content:space-between;gap:10px}.name{font-weight:800}.type{font-size:11px;color:var(--muted);margin-top:3px}
+.status{font-size:11px;border-radius:12px;padding:4px 7px;background:#f0f3f4;height:max-content}.signed .status{background:#dff3e8;color:#137345}
+.signature-mini{height:54px;border:1px dashed #aebfc4;border-radius:8px;margin-top:10px;display:flex;align-items:center;justify-content:center;color:#315d59;font:26px "Brush Script MT",cursive;background:#fff}
+canvas{width:100%;height:180px;border:2px dashed #b7c9cd;border-radius:10px;background:#fff;touch-action:none}
+.modal{position:fixed;inset:0;background:#0b273233;display:none;align-items:center;justify-content:center;padding:20px}.modal.open{display:flex}
+.modalbox{background:#fff;border-radius:15px;max-width:650px;width:100%;padding:20px;box-shadow:0 20px 60px #0003}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.form label{font-size:12px;color:var(--muted)}
+.form input,.form select{width:100%;padding:10px;border:1px solid #c8d7da;border-radius:8px;margin-top:4px}.full{grid-column:1/-1}
+.checkbox{display:flex;gap:8px;align-items:center;margin:10px 0;font-size:13px}.checkbox input{accent-color:var(--g)}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.form{grid-template-columns:1fr}}
+</style></head><body>
+<header><h1>Tarjeta de Firma · Opera Cloud</h1><span class="tag">Propuesta funcional</span></header>
+<div class="wrap">
+<div class="intro"><strong>Objetivo</strong><p>Permitir que los huéspedes firmen de forma flexible: seleccionar quién está presente, conservar firmas ya capturadas, agregar firmantes después, manejar menores de forma opcional y superar el límite fijo de 8 firmas.</p></div>
+<div class="grid">
+<aside class="card"><h2>Reserva / Registro</h2>
+<div class="row"><span class="label">Huésped principal</span><span class="value">PRUEBA-UAT-20260807163955</span></div>
+<div class="row"><span class="label">Room type</span><span class="value">LSP2B</span></div>
+<div class="row"><span class="label">Llegada</span><span class="value">10/03/2027</span></div>
+<div class="row"><span class="label">Salida</span><span class="value">11/03/2027</span></div>
+<div class="row"><span class="label">Ocupantes</span><span class="value" id="occ">5 adultos · 0 menores</span></div>
+<div class="notice">Las firmas confirmadas se conservan aunque el registro se vuelva a editar.</div>
+<div class="actions"><button class="secondary" onclick="openAdd()">+ Agregar firmante</button><button class="primary" onclick="openAdd(true)">Editar registro / agregar nuevos</button></div>
+</aside>
+<main class="card">
+<div class="tabs"><span class="tab active">Firmantes</span><span class="tab">Firmas capturadas</span><span class="tab">Revisión</span></div>
+<div class="toolbar"><div><h2 style="display:inline">Seleccionar quién firma</h2><div style="color:#687f89;font-size:13px;margin-top:4px">No todos deben estar presentes al mismo tiempo.</div></div><span class="counter" id="counter"></span></div>
+<div class="notice"><b>Nuevo comportamiento:</b> seleccionar solo a las personas presentes. Los pendientes pueden firmar posteriormente.</div>
+<div class="signers" id="signers"></div>
+<div class="card" style="margin-top:16px;background:#fbfdfd"><h2>Captura de firma</h2>
+<div style="font-size:13px;color:#647b86;margin-bottom:8px">Firmando actualmente: <b id="currentName">—</b></div>
+<canvas id="pad"></canvas><div class="actions"><button class="secondary" onclick="clearPad()">Limpiar</button><button class="primary" onclick="saveSignature()">Confirmar firma</button></div>
+</div></main></div></div>
+<div class="modal" id="modal"><div class="modalbox"><h2 id="modalTitle">Agregar firmante</h2>
+<p style="color:#687f89;font-size:13px">Agrega a alguien que llegó después sin eliminar las firmas existentes.</p>
+<div class="form"><label>Nombre<input id="newName" placeholder="Nombre completo"></label><label>Tipo<select id="newType"><option>Adulto</option><option>Menor</option></select></label>
+<label class="full checkbox"><input type="checkbox" id="consent"> Consentimiento para menor</label></div>
+<div class="actions" style="justify-content:flex-end"><button class="secondary" onclick="closeModal()">Cancelar</button><button class="primary" onclick="addSigner()">Agregar</button></div>
+</div></div>
+<script>
+let signers=[
+{name:"Titular - Firma",type:"Adulto",signed:true,signature:"Luis"},
+{name:"Acompañante - Adulto 1",type:"Adulto",signed:false},
+{name:"Acompañante - Adulto 2",type:"Adulto",signed:false},
+{name:"Acompañante - Adulto 3",type:"Adulto",signed:false},
+{name:"Acompañante - Adulto 4",type:"Adulto",signed:false}];
+let selected=0;
+const canvas=document.getElementById('pad'),ctx=canvas.getContext('2d');let drawing=false,hasInk=false;
+function resize(){const r=canvas.getBoundingClientRect(),d=devicePixelRatio||1;canvas.width=r.width*d;canvas.height=r.height*d;ctx.setTransform(d,0,0,d,0,0);ctx.lineWidth=2;ctx.lineCap='round'}window.addEventListener('resize',resize);resize();
+function pt(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+canvas.onpointerdown=e=>{drawing=true;hasInk=true;let p=pt(e);ctx.beginPath();ctx.moveTo(p.x,p.y)};
+canvas.onpointermove=e=>{if(!drawing)return;let p=pt(e);ctx.lineTo(p.x,p.y);ctx.stroke()};
+canvas.onpointerup=canvas.onpointerleave=()=>drawing=false;
+function render(){const el=document.getElementById('signers');el.innerHTML='';
+signers.forEach((s,i)=>{let d=document.createElement('div');d.className='signer '+(s.signed?'signed':'');
+d.innerHTML=`<div class="top"><div><div class="name">${s.name}</div><div class="type">${s.type}</div></div><span class="status">${s.signed?'✓ Firmado':'Pendiente'}</span></div>
+${s.signed?`<div class="signature-mini">${s.signature||'Firma registrada'}</div>`:`<button class="secondary" style="margin-top:10px" onclick="selectSigner(${i})">Seleccionar para firmar</button>`}`;el.appendChild(d)});
+document.getElementById('counter').textContent=`${signers.filter(x=>x.signed).length} de ${signers.length} firmantes con firma`;
+document.getElementById('occ').textContent=`${signers.filter(x=>x.type==='Adulto').length} adultos · ${signers.filter(x=>x.type==='Menor').length} menores`}
+function selectSigner(i){selected=i;document.getElementById('currentName').textContent=signers[i].name;clearPad()}
+function clearPad(){ctx.clearRect(0,0,canvas.width,canvas.height);hasInk=false}
+function saveSignature(){if(!hasInk){alert('Primero realiza una firma.');return}signers[selected].signed=true;signers[selected].signature='Firma manuscrita';render();clearPad();alert('Firma guardada. Las firmas anteriores permanecen.')}
+function openAdd(edit){document.getElementById('modalTitle').textContent=edit?'Editar registro / agregar nuevo firmante':'Agregar firmante';document.getElementById('modal').classList.add('open')}
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+function addSigner(){let name=document.getElementById('newName').value.trim(),type=document.getElementById('newType').value;if(!name){alert('Escribe un nombre.');return}if(type==='Menor'&&!document.getElementById('consent').checked){alert('Para un menor, selecciona el consentimiento.');return}
+signers.push({name,type,signed:false});closeModal();document.getElementById('newName').value='';document.getElementById('consent').checked=false;render()}
+render();selectSigner(0);
+</script></body></html>
