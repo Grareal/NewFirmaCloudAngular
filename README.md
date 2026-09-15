@@ -15,6 +15,12 @@ desde `angular.json`. La API debe estar disponible en `http://127.0.0.1:5016`.
 Reinicie Angular después de cambiar el proxy. Para UAT (puerto 5017), utilice
 una configuración de proxy que apunte expresamente a ese ambiente.
 
+## Documentación para cambios
+
+Consulte [`docs/GUIA_ARQUITECTURA_Y_CAMBIOS.md`](docs/GUIA_ARQUITECTURA_Y_CAMBIOS.md)
+para entender la función de cada proyecto, el flujo OpenAPI y qué archivos deben
+modificarse al cambiar pantallas, menús, rutas, campos, permisos, PDF u OPERA.
+
 En PowerShell, si la política de ejecución bloquea `npm.ps1`, use `npm.cmd ci`
 y `npm.cmd start`; no es necesario cambiar la política del equipo.
 
