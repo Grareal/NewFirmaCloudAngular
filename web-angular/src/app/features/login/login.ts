@@ -10,7 +10,7 @@ import { finalize } from 'rxjs';
   template: `
   <div class="login-shell">
     <div class="login-brand">
-      <div><span class="brand-mark">V</span></div>
+      <div class="login-logo-frame"><img src="/GrupoVidanta-Logo.png" alt="Grupo Vidanta"></div>
       <h1>Firma Vidanta</h1>
       <p>Registro digital · OPERA Cloud</p>
     </div>

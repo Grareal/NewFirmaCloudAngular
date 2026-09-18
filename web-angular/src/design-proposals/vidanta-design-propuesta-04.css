@@ -1,0 +1,190 @@
+/*
+ * Propuesta 04 — Concierge Digital
+ * Reinterpreta las ventanas como paneles flotantes y cambia el shell completo.
+ */
+:root {
+  --canvas: #eaf2fa;
+  --surface: #ffffff;
+  --ink: #4d4d4d;
+  --muted: #64717f;
+  --brand: #003594;
+  --brand-dark: #00266f;
+  --accent: #0095c8;
+  --border: #cbd9e8;
+  --shadow: 0 24px 64px rgb(0 38 111 / 16%);
+}
+
+body {
+  background:
+    linear-gradient(135deg, rgb(0 53 148 / 10%), transparent 38%),
+    radial-gradient(circle at 88% 12%, rgb(0 149 200 / 22%), transparent 23rem),
+    #eaf2fa;
+}
+
+.page {
+  display: grid;
+  grid-template-columns: 1fr;
+  padding: 1rem;
+}
+
+.sidebar {
+  position: sticky;
+  z-index: 1000;
+  top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  width: calc(100vw - 2rem);
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  color: var(--ink);
+  background: rgb(255 255 255 / 92%);
+  border: 1px solid rgb(255 255 255 / 80%);
+  border-radius: 1.25rem;
+  box-shadow: 0 16px 46px rgb(0 38 111 / 14%);
+  backdrop-filter: blur(18px);
+}
+
+.sidebar .brand {
+  display: block;
+  width: 220px;
+  flex: 0 0 auto;
+  padding: 0.65rem;
+}
+
+.brand-logo-frame {
+  min-height: 46px;
+  padding: 0.5rem;
+  border: 0;
+  box-shadow: none;
+}
+
+.brand-app,
+.nav-section-label {
+  display: none;
+}
+
+.sidebar .nav {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: row !important;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar .nav-link {
+  margin: 0.16rem;
+  padding: 0.58rem 0.72rem;
+  color: var(--vidanta-gray);
+  white-space: nowrap;
+}
+
+.sidebar .nav-link:hover {
+  color: var(--brand);
+  background: var(--vidanta-blue-soft);
+  border-color: #cfdeee;
+  transform: translateY(-1px);
+}
+
+.sidebar .nav-link.active {
+  color: #fff;
+  background: var(--brand);
+  box-shadow: 0 7px 16px rgb(0 53 148 / 18%);
+}
+
+.sidebar .nav-link.active::before { display: none; }
+
+.user-card {
+  margin: 0.65rem;
+  color: var(--ink);
+  background: #eef5fb;
+  border-color: #d6e2ee;
+}
+
+.user-card small { color: var(--muted); }
+.user-card .avatar { color: #fff; background: var(--brand); }
+
+main {
+  padding-top: 1rem;
+}
+
+.content {
+  width: min(100%, 1560px);
+  padding-inline: 0;
+}
+
+/* Ventanas principales: encabezado cromático, cuerpo blanco y profundidad. */
+.card,
+.panel,
+.admin-module,
+.waiter-search-card,
+.receiver-card,
+.dispatch-card,
+.guest-stay-card,
+.search-hero {
+  overflow: hidden;
+  background: rgb(255 255 255 / 96%);
+  border: 1px solid rgb(255 255 255 / 88%);
+  border-radius: 1.35rem;
+  box-shadow: 0 18px 48px rgb(0 38 111 / 12%);
+}
+
+.card-header,
+.panel-heading {
+  padding-block: 1rem;
+  color: #fff;
+  background: linear-gradient(110deg, var(--brand-dark), var(--brand));
+  border: 0;
+}
+
+.modal-content {
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 72%);
+  border-radius: 1.4rem;
+  box-shadow: 0 28px 80px rgb(0 25 75 / 28%);
+}
+
+.modal-header {
+  color: #fff;
+  background: linear-gradient(110deg, var(--brand), var(--accent));
+  border: 0;
+}
+
+.portal-home,
+.guest-welcome-shell,
+.login-shell {
+  border-radius: 1.7rem;
+  box-shadow: 0 30px 84px rgb(0 38 111 / 17%);
+}
+
+.portal-hero,
+.guest-welcome-visual,
+.login-brand {
+  background:
+    radial-gradient(circle at 78% 12%, rgb(0 149 200 / 34%), transparent 19rem),
+    linear-gradient(150deg, #001f58, #003594 72%);
+}
+
+.btn {
+  min-height: 44px;
+  border-radius: 0.8rem;
+}
+
+@media (max-width: 1180px) {
+  .page { display: block; padding: 0; }
+  .sidebar {
+    position: relative;
+    top: 0;
+    display: block;
+    width: 100%;
+    border-radius: 0;
+  }
+  .sidebar .brand { width: min(100%, 260px); }
+  .sidebar .nav { justify-content: flex-start; padding-inline: 0.5rem; }
+  .user-card { max-width: 360px; }
+  main { padding: 0; }
+  .content { padding-inline: 1rem; }
+}

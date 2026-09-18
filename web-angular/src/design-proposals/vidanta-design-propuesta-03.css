@@ -1,0 +1,104 @@
+/*
+ * Propuesta 03 — Azul Ejecutivo
+ * Más compacta y sobria para operación, auditoría y administración.
+ */
+:root {
+  --canvas: #edf1f6;
+  --surface: #ffffff;
+  --ink: #3f464d;
+  --muted: #68717b;
+  --brand: #003594;
+  --brand-dark: #001f58;
+  --accent: #0095c8;
+  --border: #cbd5e1;
+  --shadow: 0 8px 22px rgb(0 34 94 / 10%);
+  --radius-md: 0.45rem;
+  --radius-lg: 0.65rem;
+}
+
+body {
+  background: #edf1f6;
+  font-size: 0.9rem;
+}
+
+.sidebar {
+  width: 254px;
+  background: #001f58;
+  border-right: 4px solid var(--accent);
+  box-shadow: none;
+}
+
+.brand-logo-frame,
+.user-card,
+.sidebar .nav-link,
+.card,
+.panel,
+.admin-module,
+.form-control,
+.form-select,
+.btn {
+  border-radius: 0.42rem;
+}
+
+.sidebar .nav-link {
+  margin-block: 0.05rem;
+  padding-block: 0.58rem;
+}
+
+.sidebar .nav-link.active {
+  background: #003594;
+  box-shadow: inset 4px 0 #0095c8;
+}
+
+.content {
+  width: min(100%, 1640px);
+  padding-top: 1.4rem;
+}
+
+.page-heading,
+.portal-actions-heading h2,
+.guest-welcome-content h2,
+.waiter-title h1,
+.login-brand h1 {
+  font-family: var(--font-condensed);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.portal-home,
+.guest-welcome-shell,
+.login-shell {
+  border-radius: 0.7rem;
+  box-shadow: 0 16px 44px rgb(0 34 94 / 14%);
+}
+
+.portal-hero,
+.guest-welcome-visual,
+.login-brand {
+  background: linear-gradient(145deg, #001f58, #003594 70%, #004bbf);
+}
+
+.card,
+.panel,
+.admin-module,
+.waiter-search-card,
+.receiver-card,
+.dispatch-card {
+  border-radius: 0.55rem;
+  box-shadow: var(--shadow);
+}
+
+.table thead th {
+  color: #fff;
+  background: var(--brand);
+  border-color: rgb(255 255 255 / 14%);
+  font-family: var(--font-condensed);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.btn-primary {
+  background: #003594;
+  border-color: #003594;
+}
+

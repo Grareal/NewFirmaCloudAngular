@@ -1,0 +1,98 @@
+/*
+ * Propuesta 02 — Brisa Caribe
+ * Más luminosa, amable y relajada para módulos de atención al huésped.
+ */
+:root {
+  --canvas: #f2f9fc;
+  --surface: #ffffff;
+  --ink: #4d4d4d;
+  --muted: #65717d;
+  --brand: #003594;
+  --brand-dark: #00266f;
+  --accent: #0095c8;
+  --border: #cfe4ed;
+  --shadow: 0 16px 38px rgb(0 53 148 / 9%);
+}
+
+body {
+  background:
+    radial-gradient(circle at 92% 4%, rgb(0 149 200 / 16%), transparent 26rem),
+    linear-gradient(180deg, #f7fcfe, #eef7fb);
+}
+
+.sidebar {
+  color: var(--ink);
+  background: rgb(255 255 255 / 94%);
+  border-right: 1px solid var(--border);
+  box-shadow: 12px 0 38px rgb(0 53 148 / 7%);
+  backdrop-filter: blur(16px);
+}
+
+.sidebar .brand { color: var(--brand); }
+.brand-logo-frame { border-color: var(--border); box-shadow: none; }
+.brand-app small,
+.user-card small { color: var(--muted); }
+.nav-section-label { color: var(--accent); }
+
+.sidebar .nav-link {
+  color: var(--vidanta-gray);
+}
+
+.sidebar .nav-link:hover {
+  color: var(--brand);
+  background: var(--vidanta-sky-soft);
+  border-color: #c4e7f2;
+}
+
+.sidebar .nav-link.active {
+  color: #fff;
+  background: var(--brand);
+}
+
+.user-card {
+  color: var(--ink);
+  background: var(--vidanta-blue-soft);
+  border-color: #cfdeee;
+}
+
+.user-card .avatar {
+  color: #fff;
+  background: var(--accent);
+}
+
+.portal-home,
+.guest-welcome-shell,
+.login-shell {
+  border: 1px solid rgb(255 255 255 / 80%);
+  border-radius: 2rem;
+  box-shadow: 0 30px 80px rgb(0 53 148 / 12%);
+}
+
+.portal-hero,
+.guest-welcome-visual,
+.login-brand {
+  background:
+    radial-gradient(circle at 78% 12%, rgb(255 255 255 / 18%), transparent 20rem),
+    linear-gradient(145deg, #0095c8, #003594 74%);
+}
+
+.card,
+.panel,
+.admin-module,
+.waiter-search-card,
+.receiver-card,
+.dispatch-card {
+  border-color: #d6e8ef;
+  border-radius: 1.35rem;
+  box-shadow: 0 14px 34px rgb(0 53 148 / 8%);
+}
+
+.btn {
+  border-radius: 999px;
+}
+
+.form-control,
+.form-select,
+.guest-entry-control {
+  border-radius: 1rem;
+}

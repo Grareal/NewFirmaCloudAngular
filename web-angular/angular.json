@@ -51,6 +51,11 @@
                 "input": "public"
               },
               {
+                "glob": "GrupoVidanta-Logo.png",
+                "input": "src",
+                "output": "/"
+              },
+              {
                 "glob": "pdf.worker.min.mjs",
                 "input": "node_modules/pdfjs-dist/build",
                 "output": "/"
