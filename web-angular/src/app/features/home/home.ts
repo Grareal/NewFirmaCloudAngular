@@ -8,7 +8,7 @@ import { RouterLink } from '@angular/router';
   <div class="portal-home">
     <section class="portal-hero">
       <div class="portal-hero-copy">
-        <span class="portal-eyebrow">EXPERIENCIA VIDANTA</span>
+        <span class="portal-eyebrow"></span>
         <h1>Una bienvenida<br>extraordinaria comienza aquí.</h1>
         <p>Registro digital, firma segura y atención personalizada en una sola experiencia conectada con OPERA Cloud.</p>
         <div class="portal-trust"><span><b>✓</b> Datos protegidos</span><span><b>✓</b> Proceso digital</span><span><b>✓</b> Atención ágil</span></div>

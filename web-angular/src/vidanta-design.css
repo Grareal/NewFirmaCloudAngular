@@ -1154,19 +1154,28 @@
   border-radius:50%;
   background:radial-gradient(circle,rgba(202,162,91,.55),transparent 68%);
 }
+
 .guest-monogram {
-  position:absolute;
-  top:3rem;
-  left:3rem;
-  width:58px;
-  height:58px;
-  display:grid;
-  place-items:center;
-  color:#fff;
-  border:1px solid rgba(255,255,255,.45);
-  border-radius:50%;
-  font:700 1.6rem "Arial Narrow",Arial,sans-serif;
+  position: absolute;
+  top: 3rem;
+  left: 3rem;
+  width: 180px;
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  overflow: hidden;
 }
+
+.guest-monogram img {
+  width: 120%;
+  height: auto;
+  display: block;
+}
+ 
 .guest-visual-copy {
   position:relative;
   z-index:1;

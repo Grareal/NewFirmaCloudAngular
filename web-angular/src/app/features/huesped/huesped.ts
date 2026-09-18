@@ -10,8 +10,11 @@ import { Reservation } from '../../core/models';
   template: `
   <div class="guest-welcome-shell">
     <section class="guest-welcome-visual">
-      <div class="guest-glow"></div><div class="guest-monogram">V</div>
-      <div class="guest-visual-copy"><span>VIDANTA</span><h1>Donde comienzan<br>historias extraordinarias.</h1><p>Su estancia, sus acompañantes y su registro en una experiencia simple y segura.</p></div>
+      <div class="guest-glow"></div>
+      <div class="guest-monogram">
+        <img src="images/GrupoVidanta-Logo.png">
+      </div>
+      <div class="guest-visual-copy"><span></span><h1>Donde comienzan<br>historias extraordinarias.</h1><p>Su estancia, sus acompañantes y su registro en una experiencia simple y segura.</p></div>
     </section>
     <section class="guest-welcome-content">
       @if (!confirmation) {
