@@ -1,11 +1,27 @@
 services:
+  # Servicio principal de la aplicación
   firma-opera-cloud:
+
+    # Construye la imagen utilizando el Dockerfile
+    # ubicado en el mismo directorio.
     build: .
+
+    # Expone el puerto 8080 del contenedor
+    # hacia el puerto 8080 del host.
+    # Host:8080 -> Contenedor:8080
     ports:
       - "8080:8080"
+
+    # Variables de entorno que serán leídas por ASP.NET Core
     environment:
+
+      # Ambiente de ejecución
       ASPNETCORE_ENVIRONMENT: UAT
+
+      # Cadena de conexión SQL Server
       ConnectionStrings__FirmaOperaCloud: ${ConnectionStrings__FirmaOperaCloud}
+
+      # Configuración de integración con Opera Cloud
       OperaCloud__GatewayUrl: ${OperaCloud__GatewayUrl}
       OperaCloud__TokenPath: ${OperaCloud__TokenPath:-/oauth/v1/tokens}
       OperaCloud__AppKey: ${OperaCloud__AppKey}
@@ -13,14 +29,34 @@ services:
       OperaCloud__ClientSecret: ${OperaCloud__ClientSecret}
       OperaCloud__EnterpriseId: ${OperaCloud__EnterpriseId}
       OperaCloud__Scope: ${OperaCloud__Scope}
+
+      # Hotel por defecto cuando no se especifica uno
       OperaCloud__DefaultHotelId: ${OperaCloud__DefaultHotelId:-VINV}
+
+      # Ruta donde ASP.NET almacenará las llaves de Data Protection
       DATA_PROTECTION_KEYS_PATH: /keys
+
+    # Volumen persistente para conservar llaves criptográficas
+    # entre reinicios del contenedor
     volumes:
       - data-protection-keys:/keys
+
+    # Hace que el sistema de archivos del contenedor sea de solo lectura
+    # aumentando la seguridad.
     read_only: true
+
+    # Directorio temporal en memoria RAM para archivos temporales
     tmpfs:
       - /tmp
+
+    # Reinicia el contenedor automáticamente si se detiene
+    # excepto cuando se detiene manualmente
     restart: unless-stopped
 
+# Volúmenes persistentes administrados por Docker
 volumes:
+
+  # Almacena llaves de DataProtection
+  # evitando invalidar sesiones al reiniciar
   data-protection-keys:
+`
