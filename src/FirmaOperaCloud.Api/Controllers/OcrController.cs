@@ -63,7 +63,7 @@ public sealed class OcrController(
             fields = new
             {
                 fields.DocType, fields.FullName, fields.Curp, fields.ClaveElector,
-                fields.Vigencia, fields.PassportNumber, fields.MrzLine1, fields.MrzLine2
+                fields.Vigencia, fields.PassportNumber, fields.DocumentNumber, fields.MrzLine1, fields.MrzLine2
             },
             fieldConfidences = BuildFieldConfidences(fields, frontResult.MeanConfidence,
                 backResult?.MeanConfidence),
@@ -166,7 +166,7 @@ public sealed class OcrController(
     private static IdentityFields ApplyHumanReview(IdentityFields parsed, ReviewedIdentityFields reviewed) =>
         new(reviewed.DocType ?? parsed.DocType, reviewed.FullName, reviewed.Curp,
             reviewed.ClaveElector, reviewed.Vigencia, reviewed.MrzLine1,
-            reviewed.MrzLine2, reviewed.PassportNumber, parsed.Warnings);
+            reviewed.MrzLine2, reviewed.PassportNumber, reviewed.DocumentNumber, parsed.Warnings);
 
     private static string? ValidateReviewed(IdentityFields fields)
     {
@@ -178,6 +178,9 @@ public sealed class OcrController(
             return "La CURP revisada no tiene un dígito verificador válido.";
         if (fields.DocType == "Pasaporte" && string.IsNullOrWhiteSpace(fields.PassportNumber))
             return "Para pasaporte confirme el número de documento.";
+        if (fields.DocType is "Licencia de conducir" or "Tarjeta de residencia" or "Visa" &&
+            string.IsNullOrWhiteSpace(fields.DocumentNumber))
+            return $"Para {fields.DocType} confirme el número de documento.";
         return null;
     }
 
@@ -193,6 +196,7 @@ public sealed class OcrController(
             ["claveElector"] = ValueConfidence(fields.ClaveElector, front),
             ["vigencia"] = ValueConfidence(fields.Vigencia, front),
             ["passportNumber"] = ValueConfidence(fields.PassportNumber, reverse),
+            ["documentNumber"] = ValueConfidence(fields.DocumentNumber, front),
             ["mrzLine1"] = ValueConfidence(fields.MrzLine1, reverse),
             ["mrzLine2"] = ValueConfidence(fields.MrzLine2, reverse,
                 fields.MrzLine2 is not null && IdentityDocumentParser.VerifyPassportMrz(fields.MrzLine2) ? 1f : .65f)
@@ -227,5 +231,6 @@ public sealed record ReviewedIdentityFields(
     string? ClaveElector,
     string? Vigencia,
     string? PassportNumber,
+    string? DocumentNumber,
     string? MrzLine1,
     string? MrzLine2);

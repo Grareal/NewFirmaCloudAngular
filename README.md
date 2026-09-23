@@ -21,6 +21,11 @@ Consulte [`docs/GUIA_ARQUITECTURA_Y_CAMBIOS.md`](docs/GUIA_ARQUITECTURA_Y_CAMBIO
 para entender la función de cada proyecto, el flujo OpenAPI y qué archivos deben
 modificarse al cambiar pantallas, menús, rutas, campos, permisos, PDF u OPERA.
 
+Para la validación del proceso y alcance de Firma OPERA Cloud, consulte:
+
+- [`docs/DOCUMENTO_MAESTRO_PROCESO_FIRMA_OPERA_CLOUD.md`](docs/DOCUMENTO_MAESTRO_PROCESO_FIRMA_OPERA_CLOUD.md), con alcance, decisiones pendientes y criterios de aceptación.
+- [`docs/DOCUMENTO_VISUAL_PROCESO_FIRMA_OPERA_CLOUD.md`](docs/DOCUMENTO_VISUAL_PROCESO_FIRMA_OPERA_CLOUD.md), con los diagramas editables del proceso.
+
 En PowerShell, si la política de ejecución bloquea `npm.ps1`, use `npm.cmd ci`
 y `npm.cmd start`; no es necesario cambiar la política del equipo.
 

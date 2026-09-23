@@ -40,8 +40,9 @@ export class ApiService {
   }
 
   getRecentLocalDocuments(limit = 100) { return firstValueFrom(this.http.get<any[]>(`${B}/local-documents/recent?limit=${limit}`, { headers: this.reason('Consulta de historial operativo') })); }
-  getReservationPackage(c: string, reason: string) { return firstValueFrom(this.http.get<ReservationDocumentPackage>(`${B}/local-documents/reservation/${encodeURIComponent(c)}`, { headers: this.reason(reason) })); }
+  getReservationPackage(c: string, reason: string, includeHidden = false) { return firstValueFrom(this.http.get<ReservationDocumentPackage>(`${B}/local-documents/reservation/${encodeURIComponent(c)}?includeHidden=${includeHidden}`, { headers: this.reason(reason) })); }
   downloadLocalDocument(id: string, reason: string) { return firstValueFrom(this.http.get(`${B}/local-documents/${id}/pdf`, { responseType: 'blob', headers: this.reason(reason) })); }
+  setLocalDocumentVisibility(id: string, hidden: boolean, reason: string) { return firstValueFrom(this.http.put(`${B}/local-documents/${id}/visibility`, { hidden, reason })); }
   downloadEmailItem(id: string, reason: string) { return firstValueFrom(this.http.get(`${B}/local-documents/email-items/${id}/file`, { responseType: 'blob', headers: this.reason(reason) })); }
   sealReservationFile(id: string, reason: string) { return firstValueFrom(this.http.post(`${B}/local-documents/reservation-files/${id}/seal`, { reason })); }
 

@@ -23,6 +23,14 @@ public sealed class LocalDocument
     public string? HumanReviewedBy { get; set; }
     public DateTime? RetentionUntilUtc { get; set; }
     public bool IsLegalHold { get; set; }
+    public bool IsHidden { get; set; }
+    public DateTime? HiddenAtUtc { get; set; }
+    public string? HiddenBy { get; set; }
+    public string? HiddenReason { get; set; }
+    public bool SignatureAuthorizationAccepted { get; set; }
+    public bool MarketingConsent { get; set; }
+    public DateTime? ConsentAcceptedAtUtc { get; set; }
+    public string? ConsentTextVersion { get; set; }
     public PdfTemplate? PdfTemplate { get; set; }
     public ReservationFile? ReservationFile { get; set; }
     public ICollection<LocalDocumentSignature> Signatures { get; set; } = [];

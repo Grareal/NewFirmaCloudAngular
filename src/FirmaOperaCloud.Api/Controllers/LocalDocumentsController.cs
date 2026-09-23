@@ -15,15 +15,17 @@ public sealed class LocalDocumentsController(
     IAuditService audit) : ControllerBase
 {
     [HttpGet("recent")]
-    public async Task<IActionResult> Recent([FromQuery] int limit = 200, CancellationToken ct = default)
+    public async Task<IActionResult> Recent([FromQuery] int limit = 200, [FromQuery] bool includeHidden = false, CancellationToken ct = default)
     {
         var rows = await db.LocalDocuments.AsNoTracking()
+            .Where(x => includeHidden || !x.IsHidden)
             .OrderByDescending(x => x.CreatedAtUtc).Take(Math.Clamp(limit, 1, 200))
             .Select(x => new
             {
                 x.Id, x.ReservationFileId, x.HotelId, x.ConfirmationNumber, x.RoomNumber,
                 x.Version, x.FileName, x.DocumentHash, x.Status, x.AttachmentId,
                 x.AttachmentFileName, x.CreatedAtUtc, x.UploadedAtUtc,
+                x.IsHidden, x.HiddenAtUtc, x.HiddenBy, x.HiddenReason,
                 SignatureCount = x.Signatures.Count
             }).ToListAsync(ct);
         await audit.AppendAsync(AuditRequest.Create(HttpContext, "Documents.Listed", "LocalDocument",
@@ -32,7 +34,7 @@ public sealed class LocalDocumentsController(
     }
 
     [HttpGet("reservation/{confirmationNumber}")]
-    public async Task<IActionResult> ReservationPackage(string confirmationNumber, CancellationToken ct)
+    public async Task<IActionResult> ReservationPackage(string confirmationNumber, [FromQuery] bool includeHidden = false, CancellationToken ct = default)
     {
         var reason = AuditRequest.ReadReason(HttpContext);
         if (string.IsNullOrWhiteSpace(reason))
@@ -43,13 +45,14 @@ public sealed class LocalDocumentsController(
             return BadRequest(new { message = "Indique un número de reserva válido." });
 
         var documents = await db.LocalDocuments.AsNoTracking()
-            .Where(x => x.ConfirmationNumber == confirmation)
+            .Where(x => x.ConfirmationNumber == confirmation && (includeHidden || !x.IsHidden))
             .OrderByDescending(x => x.Version)
             .Select(x => new
             {
                 x.Id, x.ReservationFileId, x.HotelId, x.ConfirmationNumber, x.RoomNumber,
                 x.Version, x.FileName, x.DocumentHash, x.Status, x.AttachmentId,
                 x.AttachmentFileName, x.CreatedAtUtc, x.UploadedAtUtc,
+                x.IsHidden, x.HiddenAtUtc, x.HiddenBy, x.HiddenReason,
                 SignatureCount = x.Signatures.Count
             }).ToListAsync(ct);
 
@@ -134,8 +137,8 @@ public sealed class LocalDocumentsController(
         term = term.Trim();
         if (term.Length < 2) return BadRequest();
         var rows = await db.LocalDocuments.AsNoTracking()
-            .Where(x => x.ConfirmationNumber.Contains(term) ||
-                (x.RoomNumber != null && x.RoomNumber.Contains(term)))
+            .Where(x => !x.IsHidden && (x.ConfirmationNumber.Contains(term) ||
+                (x.RoomNumber != null && x.RoomNumber.Contains(term))))
             .OrderByDescending(x => x.CreatedAtUtc).Take(100)
             .Select(x => new
             {
@@ -146,6 +149,28 @@ public sealed class LocalDocumentsController(
         await audit.AppendAsync(AuditRequest.Create(HttpContext, "Documents.Searched", "LocalDocument",
             reason: AuditRequest.ReadReason(HttpContext) ?? "Búsqueda operativa"), ct);
         return Ok(rows);
+    }
+
+    [Authorize(Policy = "Documents.Seal")]
+    [HttpPut("{id:guid}/visibility")]
+    public async Task<IActionResult> SetVisibility(Guid id, [FromBody] DocumentVisibilityRequest request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.Reason) || request.Reason.Trim().Length < 10)
+            return BadRequest(new { message = "El motivo debe tener al menos 10 caracteres." });
+
+        var document = await db.LocalDocuments.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (document is null) return NotFound();
+
+        var username = User.FindFirst("username")?.Value ?? User.Identity?.Name ?? "unknown";
+        document.IsHidden = request.Hidden;
+        document.HiddenAtUtc = request.Hidden ? DateTime.UtcNow : null;
+        document.HiddenBy = request.Hidden ? username : null;
+        document.HiddenReason = request.Hidden ? request.Reason.Trim() : null;
+        await db.SaveChangesAsync(ct);
+        await audit.AppendAsync(AuditRequest.Create(HttpContext,
+            request.Hidden ? "Document.Hidden" : "Document.Restored", "LocalDocument",
+            document.Id.ToString(), document.HotelId, document.ConfirmationNumber, request.Reason.Trim()), ct);
+        return Ok(new { document.Id, document.IsHidden, document.HiddenAtUtc, document.HiddenBy, document.HiddenReason });
     }
 
     [HttpGet("{id:guid}/pdf")]
@@ -214,3 +239,4 @@ public sealed class LocalDocumentsController(
 }
 
 public sealed record SealReservationFileRequest(string Reason);
+public sealed record DocumentVisibilityRequest(bool Hidden, string Reason);

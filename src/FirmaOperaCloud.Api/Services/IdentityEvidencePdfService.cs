@@ -65,6 +65,7 @@ public sealed class IdentityEvidencePdfService
         $"Nombre detectado: {f.FullName ?? "—"}",
         $"CURP: {f.Curp ?? "—"}   Clave elector: {f.ClaveElector ?? "—"}   Vigencia: {f.Vigencia ?? "—"}",
         $"Pasaporte/MRZ doc: {f.PassportNumber ?? "—"}",
+        $"Número de otro documento: {f.DocumentNumber ?? "—"}",
         $"MRZ1: {Trunc(f.MrzLine1, 60) ?? "—"}",
         $"MRZ2: {Trunc(f.MrzLine2, 60) ?? "—"}",
         f.Warnings.Count == 0 ? "Advertencias: ninguna" : $"Advertencias: {string.Join(" | ", f.Warnings)}",

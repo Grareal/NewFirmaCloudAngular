@@ -78,7 +78,11 @@ public sealed class LocalDocumentService(
         var version = (await db.LocalDocuments.Where(x => x.HotelId == r.HotelId && x.ConfirmationNumber == confirmation).MaxAsync(x => (int?)x.Version, ct) ?? 0) + 1;
         var document = new LocalDocument { HotelId = r.HotelId, ConfirmationNumber = confirmation, ReservationId = reservationId, RoomNumber = r.RoomStay.RoomId,
             PdfTemplateId = template?.Id, Version = version, FileName = $"REGCARD{confirmation}-V{version}.pdf", PdfData = pdf,
-            DocumentHash = Convert.ToHexString(SHA256.HashData(pdf)), CreatedBy = user };
+            DocumentHash = Convert.ToHexString(SHA256.HashData(pdf)), CreatedBy = user,
+            SignatureAuthorizationAccepted = input.SignatureAuthorizationAccepted,
+            MarketingConsent = input.MarketingConsent,
+            ConsentAcceptedAtUtc = DateTime.UtcNow,
+            ConsentTextVersion = "2026-09-23" };
         foreach (var item in captured) document.Signatures.Add(new LocalDocumentSignature { StoredSignature = item.Signature, Role = item.Signature.SignerRole, Position = item.Position, Reused = item.Reused });
         await reservationFiles.AddDocumentAsync(document, user, ct);
         return (document, signatures);

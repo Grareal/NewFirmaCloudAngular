@@ -20,6 +20,17 @@ public sealed class IdentityDocumentParserTests
         Assert.False(IdentityDocumentParser.VerifyPassportMrz(line));
     }
 
+    [Theory]
+    [InlineData("SECRETARIA DE MOVILIDAD\nLICENCIA DE CONDUCIR\nNO. DE LICENCIA ABC123456\nVENCE 2029", "Licencia de conducir", "ABC123456")]
+    [InlineData("INSTITUTO NACIONAL DE MIGRACION\nTARJETA DE RESIDENTE TEMPORAL\nNUMERO DE TARJETA RT-987654", "Tarjeta de residencia", "RT-987654")]
+    [InlineData("UNITED STATES OF AMERICA\nVISA\nDOCUMENT NUMBER V12345678", "Visa", "V12345678")]
+    public void AdditionalIdentityDocuments_AreDetected(string text, string expectedType, string expectedNumber)
+    {
+        var parsed = IdentityDocumentParser.Parse(text, null, "Auto");
+        Assert.Equal(expectedType, parsed.DocType);
+        Assert.Equal(expectedNumber, parsed.DocumentNumber);
+    }
+
     [Fact]
     public void NewLegalIdentifiers_AreVersionSevenGuids()
     {

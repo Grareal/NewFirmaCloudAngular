@@ -1,4 +1,5 @@
-import { Component, ViewChild, inject, OnInit } from '@angular/core';
+import { Component, ViewChild, inject, OnDestroy, OnInit } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
@@ -11,20 +12,25 @@ import { SignatureCanvasComponent } from '../../shared/signature-canvas';
   templateUrl: './tarjeta.html'
 
 })
-export class TarjetaComponent implements OnInit {
+export class TarjetaComponent implements OnInit, OnDestroy {
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
+  private sanitizer = inject(DomSanitizer);
   @ViewChild('pad') pad?: SignatureCanvasComponent;
   confirmation = '';
   steps = [{ n: 1, label: 'Datos' }, { n: 2, label: 'Ocupantes' }, { n: 3, label: 'Firmas' }, { n: 4, label: 'Revisión' }];
   step = 1; activeSigner: number | null = null; primarySelected = true;
   revision: string | null = null; savedAt = ''; draftUnavailable = false;
   reservation: Reservation | null = null;
-  input: OfficialCardInput = { marketingConsent: false, occupants: [] };
+  input: OfficialCardInput = { marketingConsent: false, signatureAuthorizationAccepted: false, occupants: [] };
   loading = true; working = false; previewReady = false; confirmSend = false;
   message = ''; isError = false;
   operaGiven = ''; operaSurname = ''; operaWorking = false; confirmOpera = false;
   lookup: any = null; guestPreview: any = null; operaProfileId = '';
+  previewBlob: Blob | null = null; previewUrl: SafeResourceUrl | null = null;
+  private previewObjectUrl: string | null = null;
+  // Se conserva el código de edición para reactivarlo únicamente si Operación lo aprueba.
+  readonly allowCompanionEditing = false;
 
   ngOnInit() {
     this.confirmation = this.route.snapshot.params['confirmation'];
@@ -47,7 +53,8 @@ export class TarjetaComponent implements OnInit {
             this.input.occupants.push({ name: '', signaturePngBase64: '', selected: true });
         }
         if (draft.input) this.input = draft.input;
-        this.input.occupants.forEach(o => { o.clientId ||= crypto.randomUUID(); });
+        this.input.signatureAuthorizationAccepted ??= false;
+        if (r) this.syncOccupantsFromOpera(r);
         this.revision = draft.revision;
         this.savedAt = draft.updatedAtUtc ? new Date(draft.updatedAtUtc).toLocaleString('es-MX') : '';
         this.loading = false;
@@ -56,10 +63,24 @@ export class TarjetaComponent implements OnInit {
     );
   }
 
+  ngOnDestroy() { this.clearPreview(); }
+
+  private syncOccupantsFromOpera(reservation: Reservation) {
+    const existing = this.input.occupants || [];
+    const opera = (reservation.accompanyingGuests || []).map(g => ({ name: g.fullName, signerId: g.profileId ?? g.reservationGuestId }))
+      .concat((reservation.accompanyingGuestNames || []).map(name => ({ name, signerId: undefined })))
+      .filter((g, index, all) => !!g.name?.trim() && all.findIndex(x => (x.signerId && x.signerId === g.signerId) || (!x.signerId && x.name.trim().toUpperCase() === g.name.trim().toUpperCase())) === index)
+      .slice(0, 8);
+    this.input.occupants = opera.map(g => {
+      const saved = existing.find(x => (g.signerId && x.signerId === g.signerId) || x.name.trim().toUpperCase() === g.name.trim().toUpperCase());
+      return { clientId: saved?.clientId || crypto.randomUUID(), signerId: g.signerId, name: g.name, signaturePngBase64: saved?.signaturePngBase64 || '', selected: true };
+    });
+  }
+
   get totalSigners() { return this.input.occupants.length + 1; }
   get signedCount() { return Number(!!this.input.primarySignaturePngBase64) + this.input.occupants.filter(o => !!o.signaturePngBase64).length; }
   get currentSigner() { return this.activeSigner === -1 ? this.input.primaryGuestName : this.input.occupants[this.activeSigner ?? -1]?.name; }
-  invalidatePreview() { this.previewReady = false; this.confirmSend = false; }
+  invalidatePreview() { this.previewReady = false; this.confirmSend = false; this.clearPreview(); }
 
   addOccupant() {
     if (this.input.occupants.length < 8) {
@@ -81,6 +102,7 @@ export class TarjetaComponent implements OnInit {
   }
   capture() {
     if (this.activeSigner === null || this.working) return;
+    if (!this.input.signatureAuthorizationAccepted) { this.setMsg('Debe verificar los datos y autorizar el uso de las firmas antes de capturarlas.', true); return; }
     const png = this.pad?.getPng();
     if (!png) { this.setMsg('Capture la firma antes de confirmar.', true); return; }
     if (this.activeSigner === -1) this.input.primarySignaturePngBase64 = png;
@@ -106,9 +128,24 @@ export class TarjetaComponent implements OnInit {
   preview() {
     this.working = true; this.msg('');
     this.persist().then(() => this.api.previewOfficialCard(this.confirmation, this.input)).then(
-      b => { this.api.downloadBlob(b, `REGCARD${this.confirmation}PREVIEW.pdf`); this.previewReady = true; this.setMsg('Vista previa generada. Revísala antes de enviar.', false); this.working = false; },
+      b => {
+        this.clearPreview();
+        this.previewBlob = b;
+        this.previewObjectUrl = URL.createObjectURL(b);
+        this.previewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.previewObjectUrl);
+        this.previewReady = true;
+        this.setMsg('Vista previa generada. Revísala en esta pantalla antes de enviar.', false);
+        this.working = false;
+      },
       e => { this.setMsg(e?.error?.message || e.message, true); this.working = false; }
     );
+  }
+  downloadPreview() { if (this.previewBlob) this.api.downloadBlob(this.previewBlob, `REGCARD${this.confirmation}PREVIEW.pdf`); }
+  private clearPreview() {
+    if (this.previewObjectUrl) URL.revokeObjectURL(this.previewObjectUrl);
+    this.previewObjectUrl = null;
+    this.previewUrl = null;
+    this.previewBlob = null;
   }
   upload() {
     this.working = true; this.msg('');

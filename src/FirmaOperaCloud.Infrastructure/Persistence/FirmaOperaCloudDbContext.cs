@@ -165,6 +165,8 @@ public sealed class FirmaOperaCloudDbContext : DbContext
             entity.Property(e => e.DocumentHash).HasMaxLength(64).IsRequired(); entity.Property(e => e.Status).HasMaxLength(32).IsRequired();
             entity.Property(e => e.AttachmentId).HasMaxLength(64); entity.Property(e => e.AttachmentFileName).HasMaxLength(255); entity.Property(e => e.CreatedBy).HasMaxLength(100);
             entity.Property(e => e.HumanReviewedBy).HasMaxLength(200);
+            entity.Property(e => e.HiddenBy).HasMaxLength(200); entity.Property(e => e.HiddenReason).HasMaxLength(500);
+            entity.Property(e => e.ConsentTextVersion).HasMaxLength(32);
             entity.HasIndex(e => new { e.HotelId, e.ConfirmationNumber, e.Version }).IsUnique();
             entity.HasOne(e => e.PdfTemplate).WithMany().HasForeignKey(e => e.PdfTemplateId).OnDelete(DeleteBehavior.SetNull);
             entity.HasOne(e => e.ReservationFile).WithMany(e => e.Documents).HasForeignKey(e => e.ReservationFileId).OnDelete(DeleteBehavior.Restrict);

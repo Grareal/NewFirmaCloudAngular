@@ -40,10 +40,10 @@ public sealed class SmtpEmailSender : IGuestEmailSender
         using var client = new SmtpClient(options.Host, options.Port)
         {
             EnableSsl = options.EnableSsl, DeliveryMethod = SmtpDeliveryMethod.Network, UseDefaultCredentials = false,
-            Credentials = string.IsNullOrWhiteSpace(options.Username) ? null : new NetworkCredential(options.Username, options.Password)
+            Credentials = string.IsNullOrWhiteSpace(options.Username) ? null : new NetworkCredential(options.Username, options.Password),
+            Timeout = 45_000
         };
-        ct.ThrowIfCancellationRequested();
-        await client.SendMailAsync(message).WaitAsync(ct);
+        await client.SendMailAsync(message, ct);
         return null;
     }
 }

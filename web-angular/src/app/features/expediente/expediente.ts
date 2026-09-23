@@ -23,6 +23,7 @@ import { ReservationDocumentPackage } from '../../core/models';
     </div>
     <label class="form-label mt-3" for="accessReason">Motivo de consulta (se registrará en auditoría)</label>
     <input id="accessReason" class="form-control" [(ngModel)]="accessReason" maxlength="500" placeholder="Ej. atención al huésped en recepción" autocomplete="off">
+    @if (isAdmin) { <div class="form-check mt-3"><input id="hidden" class="form-check-input" type="checkbox" [(ngModel)]="includeHidden"><label for="hidden" class="form-check-label">Mostrar documentos ocultos</label></div> }
     <div class="form-text">Consulta únicamente información almacenada en FirmaOperaCloud; no modifica OPERA.</div>
   </section>
   @if (error) { <div class="alert alert-danger mt-3">{{ error }}</div> }
@@ -56,10 +57,11 @@ import { ReservationDocumentPackage } from '../../core/models';
           <div class="section-heading"><div><div class="page-kicker">Archivos definitivos</div><h2>Tarjetas de registro</h2></div><span class="count-pill">{{ result.documents.length }}</span></div>
           @if (!result.documents.length) { <p class="text-muted mb-0">Todavía no se ha almacenado una tarjeta definitiva.</p> }
           @for (d of result.documents; track d.id) {
-            <article class="document-row">
+            <article class="document-row" [class.opacity-50]="d.isHidden">
               <div class="file-symbol">PDF</div>
-              <div class="file-data"><strong>{{ d.fileName }}</strong><span>Versión {{ d.version }} · {{ dt(d.createdAtUtc) }} · {{ d.signatureCount }} firma(s)</span><small>Estado: {{ d.status }}@if (d.attachmentId) { · Attachment OPERA: {{ d.attachmentId }} }</small></div>
+              <div class="file-data"><strong>{{ d.fileName }} @if (d.isHidden) { · OCULTO }</strong><span>Versión {{ d.version }} · {{ dt(d.createdAtUtc) }} · {{ d.signatureCount }} firma(s)</span><small>Estado: {{ d.status }}@if (d.attachmentId) { · Attachment OPERA: {{ d.attachmentId }} }@if (d.hiddenReason) { · Motivo: {{ d.hiddenReason }} }</small></div>
               <button class="btn btn-sm btn-outline-primary" (click)="downloadDoc(d.id, d.fileName)">Descargar</button>
+              @if (isAdmin) { <button class="btn btn-sm" [class.btn-outline-danger]="!d.isHidden" [class.btn-outline-success]="d.isHidden" (click)="setVisibility(d.id, !d.isHidden)">{{ d.isHidden ? 'Restaurar' : 'Ocultar' }}</button> }
             </article>
           }
         </section>
@@ -117,20 +119,20 @@ export class ExpedienteComponent implements OnInit {
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
   auth = inject(AuthService);
-  confirmation = ''; accessReason = ''; busy = false; resending = false; error = ''; message = '';
+  confirmation = ''; accessReason = ''; busy = false; resending = false; includeHidden = false; error = ''; message = '';
   result: ReservationDocumentPackage | null = null;
   images: Record<string, string> = {};
 
   ngOnInit() {
     const q = this.route.snapshot.queryParams['reserva'];
-    if (q) { this.confirmation = q; this.search(); }
+    if (q) { this.confirmation = q; this.accessReason = 'Vista previa administrativa del correo'; this.search(); }
   }
   get isAdmin() { return this.auth.role === 'Admin'; }
 
   search() {
     if (this.accessReason.trim().length < 5) { this.error = 'Indique un motivo de consulta de al menos 5 caracteres.'; return; }
     this.busy = true; this.error = ''; this.message = ''; this.images = {};
-    this.api.getReservationPackage(this.confirmation.trim(), this.accessReason.trim()).then(async r => {
+    this.api.getReservationPackage(this.confirmation.trim(), this.accessReason.trim(), this.includeHidden).then(async r => {
       this.result = r;
       for (const s of r.signatures) {
         try {
@@ -147,6 +149,15 @@ export class ExpedienteComponent implements OnInit {
   }
   downloadDoc(id: string, name: string) { this.api.downloadLocalDocument(id, this.accessReason.trim()).then(b => this.api.downloadBlob(b, name)); }
   downloadItem(id: string, name: string) { this.api.downloadEmailItem(id, this.accessReason.trim()).then(b => this.api.downloadBlob(b, name)); }
+  setVisibility(id: string, hidden: boolean) {
+    const action = hidden ? 'ocultamiento' : 'restauración';
+    const reason = window.prompt(`Motivo del ${action} (mínimo 10 caracteres):`)?.trim() || '';
+    if (reason.length < 10) return;
+    this.api.setLocalDocumentVisibility(id, hidden, reason).then(
+      () => { this.message = hidden ? 'Documento ocultado sin eliminar su evidencia.' : 'Documento restaurado.'; this.search(); },
+      e => this.error = e?.error?.message || e.message
+    );
+  }
   seal(id: string) {
     const reason = window.prompt('Motivo del sellado (mínimo 10 caracteres):')?.trim() || '';
     if (reason.length < 10) return;

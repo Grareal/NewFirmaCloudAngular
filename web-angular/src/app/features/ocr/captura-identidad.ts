@@ -30,7 +30,7 @@ import { OcrParseResult } from '../../core/models';
           <div class="col-6"><label class="form-label">Confirmación</label><input class="form-control" [(ngModel)]="confirmation"></div>
           <div class="col-3"><label class="form-label">Hotel</label><input class="form-control" [(ngModel)]="hotelId"></div>
           <div class="col-3"><label class="form-label">Hab.</label><input class="form-control" [(ngModel)]="room"></div>
-          <div class="col-12"><label class="form-label">Documento</label><select class="form-select" [(ngModel)]="docType"><option value="Auto">Auto</option><option value="INE">INE</option><option value="Pasaporte">Pasaporte</option></select></div>
+          <div class="col-12"><label class="form-label">Documento</label><select class="form-select" [(ngModel)]="docType"><option value="Auto">Detección automática</option><option value="INE">INE</option><option value="Pasaporte">Pasaporte</option><option value="Licencia">Licencia de conducir</option><option value="Residencia">Tarjeta de residencia</option><option value="Visa">Visa</option></select></div>
         </div>
       </div></div>
     </div>
@@ -63,9 +63,10 @@ import { OcrParseResult } from '../../core/models';
             <div class="col-md-3"><label class="form-label">Clave elector</label><input class="form-control font-monospace" [(ngModel)]="parse.fields.claveElector"></div>
             <div class="col-md-3"><label class="form-label">Vigencia</label><input class="form-control" [(ngModel)]="parse.fields.vigencia"></div>
             <div class="col-md-3"><label class="form-label">Pasaporte</label><input class="form-control font-monospace" [(ngModel)]="parse.fields.passportNumber"></div>
+            <div class="col-md-3"><label class="form-label">Número de documento</label><input class="form-control font-monospace" [(ngModel)]="parse.fields.documentNumber"></div>
             <div class="col-md-6"><label class="form-label">Tipo detectado</label><input class="form-control" [(ngModel)]="parse.fields.docType" readonly></div>
           </div>
-          <div class="small text-muted mt-2">Confianza por campo: nombre {{ fieldPct('fullName') }} · CURP {{ fieldPct('curp') }} · elector {{ fieldPct('claveElector') }} · pasaporte {{ fieldPct('passportNumber') }}</div>
+          <div class="small text-muted mt-2">Confianza por campo: nombre {{ fieldPct('fullName') }} · CURP {{ fieldPct('curp') }} · elector {{ fieldPct('claveElector') }} · pasaporte {{ fieldPct('passportNumber') }} · otro documento {{ fieldPct('documentNumber') }}</div>
           <div class="form-check mt-3"><input class="form-check-input" type="checkbox" [(ngModel)]="reviewOk" id="reviewOk"><label class="form-check-label" for="reviewOk">Comparé y confirmé cada dato contra el documento original</label></div>
           <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="retentionOk" id="retentionOk"><label class="form-check-label" for="retentionOk">Confirmo que existe finalidad y autorización para conservar esta evidencia</label></div>
           <details class="mt-2"><summary class="small text-muted">Texto OCR crudo</summary><pre class="small bg-light p-2">{{ parse.frontText }}</pre></details>

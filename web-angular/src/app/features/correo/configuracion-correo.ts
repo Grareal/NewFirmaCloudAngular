@@ -28,7 +28,7 @@ import { GuestEmailSettingInfo } from '../../core/models';
     <div class="col-12"><label class="form-label">Cuerpo HTML</label><textarea class="form-control font-monospace" rows="6" [(ngModel)]="model.bodyHtml"></textarea><div class="form-text">Variables: {{ '{guest}' }} y {{ '{confirmation}' }}</div></div>
     <div class="col-md-4"><button class="btn btn-primary w-100" [disabled]="busy" (click)="save()">Guardar configuración</button></div>
     <div class="col-md-5"><input type="email" class="form-control" [(ngModel)]="testRecipient" placeholder="Destinatario de prueba"></div>
-    <div class="col-md-3"><button class="btn btn-outline-primary w-100" [disabled]="busy || !model.smtpConfigured || !testRecipient.trim()" (click)="test()">Enviar prueba</button></div>
+    <div class="col-md-3"><button class="btn btn-outline-primary w-100" [disabled]="busy || !canTest || !testRecipient.trim()" (click)="test()">Enviar prueba</button></div>
   </div></section>
   <section class="panel mt-4"><div class="page-kicker">Prueba sin envío</div><h2 class="section-title mt-2">Vista previa por reserva</h2><p class="text-muted">Muestra el correo y sus archivos sin conectarse al servidor SMTP.</p><div class="input-group"><input class="form-control" [(ngModel)]="previewConfirmation" placeholder="Número de reserva"><button class="btn btn-outline-primary" [disabled]="!previewConfirmation.trim()" (click)="preview()">Visualizar correo</button></div></section>
   @if (message) { <div class="alert mt-3" [class.alert-danger]="isError" [class.alert-success]="!isError">{{ message }}</div> }
@@ -42,6 +42,7 @@ export class ConfiguracionCorreoComponent implements OnInit {
   testRecipient = ''; previewConfirmation = ''; message = '';
   busy = false; isError = false;
   get isAdmin() { return this.auth.role === 'Admin'; }
+  get canTest() { return !!this.model.host.trim() && this.model.port > 0 && !!this.model.fromAddress.trim() && (!!this.model.password.trim() || this.model.passwordConfigured || !this.model.username.trim()); }
 
   ngOnInit() {
     if (!this.isAdmin) return;
@@ -50,14 +51,14 @@ export class ConfiguracionCorreoComponent implements OnInit {
   save() {
     this.busy = true; this.isError = false;
     this.api.saveEmailSetting(this.model.hotelId, this.model).then(
-      () => { this.model.password = ''; this.model.passwordConfigured = true; this.message = 'Configuración SMTP guardada.'; this.busy = false; },
+      () => { this.model.passwordConfigured ||= !!this.model.password; this.model.password = ''; this.model.smtpConfigured = this.canTest; this.message = 'Configuración SMTP guardada. El procesador aplicará los cambios sin reiniciar la aplicación.'; this.busy = false; },
       e => { this.isError = true; this.message = e?.error?.message || e.message; this.busy = false; }
     );
   }
   test() {
     this.busy = true; this.isError = false;
     this.api.saveEmailSetting(this.model.hotelId, this.model).then(() => {
-      this.model.password = '';
+      this.model.passwordConfigured ||= !!this.model.password; this.model.password = ''; this.model.smtpConfigured = this.canTest;
       this.api.testEmailSetting(this.model.hotelId, this.testRecipient).then(
         r => { this.message = r.message; this.busy = false; },
         e => { this.isError = true; this.message = e?.error?.message || e.message; this.busy = false; }

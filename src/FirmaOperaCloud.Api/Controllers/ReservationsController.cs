@@ -273,6 +273,9 @@ public sealed class ReservationsController : ControllerBase
         [FromBody] FillOfficialRegistrationCardRequest request,
         CancellationToken cancellationToken)
     {
+        if ((request.PrimarySignaturePngBase64 is not null || request.Occupants.Any(x => !string.IsNullOrWhiteSpace(x.SignaturePngBase64)))
+            && !request.SignatureAuthorizationAccepted)
+            return BadRequest(new { message = "Debe aceptar la verificación de datos y autorización de uso de firmas antes de generar el documento." });
         var context = await GetDocumentContextAsync(confirmationNumber, request, cancellationToken);
         var filledPdf = context.LocalTemplate is null ? _pdfFiller.Fill(context.BasePdf, request.ToInput(context.Reservation.Guest.FullName)) : _localDocuments.Fill(context.LocalTemplate, context.Reservation, request);
         Response.Headers["X-Document-Template"] = context.LocalTemplate?.Name ?? context.OperaTemplate ?? "official";
@@ -290,6 +293,10 @@ public sealed class ReservationsController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.PrimarySignaturePngBase64))
         {
             return BadRequest(new { message = "La firma del huésped principal es obligatoria para enviar el documento." });
+        }
+        if (!request.SignatureAuthorizationAccepted)
+        {
+            return BadRequest(new { message = "Debe aceptar la verificación de datos y autorización de uso de firmas antes de enviar el documento." });
         }
 
         var context = await GetDocumentContextAsync(confirmationNumber, request, cancellationToken);
@@ -401,6 +408,7 @@ public sealed class FillOfficialRegistrationCardRequest
     public string? PrimarySignerId { get; set; }
     public string? PrimarySignaturePngBase64 { get; set; }
     public bool MarketingConsent { get; set; }
+    public bool SignatureAuthorizationAccepted { get; set; }
     public List<RegistrationCardOccupantRequest> Occupants { get; set; } = [];
 
     public RegistrationCardFillInput ToInput(string defaultPrimaryName) => new(

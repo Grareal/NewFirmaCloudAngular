@@ -58,20 +58,20 @@
             <div class="workflow-actions"><span></span><button class="btn btn-primary" (click)="step = 2">Continuar con ocupantes</button></div>
           } @else if (step === 2) {
             <div class="d-flex justify-content-between gap-3 align-items-start">
-              <div><h2 class="section-title">Ocupantes autorizados</h2><p class="text-secondary">Agrega únicamente adultos que firmarán la autorización de cargos.</p></div>
+              <div><h2 class="section-title">Ocupantes de OPERA</h2><p class="text-secondary">Los acompañantes se toman directamente de la reserva; en esta etapa no se agregan, eliminan ni desmarcan.</p></div>
               <span class="capacity-pill">{{ input.occupants.length }} / 8</span>
             </div>
             <div class="occupant-list mt-3">
               @for (o of input.occupants; track o.clientId) {
                 <div class="occupant-row">
                   <span class="occupant-number">{{ $index + 1 }}</span>
-                  <div class="form-check occupant-select"><input class="form-check-input" type="checkbox" [(ngModel)]="o.selected" [disabled]="!!o.signaturePngBase64" [attr.aria-label]="'Seleccionar a ' + (o.name || 'ocupante')"></div>
-                  <div class="flex-grow-1"><input class="form-control" placeholder="Nombre completo" [(ngModel)]="o.name" [readonly]="!!o.signaturePngBase64"></div>
-                  <button type="button" class="btn btn-outline-danger" [disabled]="!canRemove($index)" (click)="removeOccupant($index)">Quitar</button>
+                  @if (allowCompanionEditing) { <div class="form-check occupant-select"><input class="form-check-input" type="checkbox" [(ngModel)]="o.selected" [disabled]="!!o.signaturePngBase64" [attr.aria-label]="'Seleccionar a ' + (o.name || 'ocupante')"></div> }
+                  <div class="flex-grow-1"><input class="form-control" placeholder="Nombre completo" [(ngModel)]="o.name" [readonly]="!allowCompanionEditing || !!o.signaturePngBase64"></div>
+                  @if (allowCompanionEditing) { <button type="button" class="btn btn-outline-danger" [disabled]="!canRemove($index)" (click)="removeOccupant($index)">Quitar</button> }
                 </div>
               }
             </div>
-            <div class="border rounded p-3 mt-4">
+            @if (allowCompanionEditing) { <div class="border rounded p-3 mt-4">
               <h3 class="h6">Agregar un adulto a la reserva de OPERA</h3>
               <p class="small text-secondary">Buscaremos primero si el huésped ya tiene perfil.</p>
               <div class="row g-2">
@@ -108,12 +108,15 @@
                   }
                 </div>
               }
-            </div>
-            @if (input.occupants.length < 8) { <button type="button" class="btn btn-outline-primary mt-3" (click)="addOccupant()">+ Agregar ocupante</button> }
+            </div> }
+            @if (allowCompanionEditing && input.occupants.length < 8) { <button type="button" class="btn btn-outline-primary mt-3" (click)="addOccupant()">+ Agregar ocupante</button> }
             <div class="workflow-actions"><button class="btn btn-outline-secondary" (click)="step = 1">Atrás</button><button class="btn btn-primary" (click)="startSignatures()">Continuar con firmas</button></div>
           } @else if (step === 3) {
             <h2 class="section-title">Selecciona quién firma ahora</h2>
             <p class="text-secondary">Los pendientes pueden firmar después. Cada firma confirmada se guarda y conserva su lugar en la tarjeta.</p>
+            <div class="alert alert-info">
+              <div class="form-check"><input id="signatureLegal" class="form-check-input" type="checkbox" [(ngModel)]="input.signatureAuthorizationAccepted"><label class="form-check-label" for="signatureLegal"><strong>Verifico</strong> que los datos y firmantes corresponden a la reserva y <strong>autorizo</strong> que las firmas capturadas se incorporen a la Tarjeta de Registro y al expediente de la estancia.</label></div>
+            </div>
             <div class="signature-progress">{{ signedCount }} de {{ totalSigners }} firmas capturadas</div>
             <div class="row g-3 mt-1">
               <div class="col-md-6"><div class="border rounded p-3 h-100">
@@ -122,7 +125,7 @@
                   <div class="text-success">Firmado</div><img [src]="input.primarySignaturePngBase64" alt="Firma del titular" class="img-fluid" style="max-height:80px">
                 } @else {
                   <div class="form-check mt-2"><input id="select-primary" type="checkbox" class="form-check-input" [(ngModel)]="primarySelected"><label for="select-primary" class="form-check-label">Firma ahora</label></div>
-                  <button class="btn btn-outline-primary mt-2" [disabled]="!primarySelected" (click)="selectSigner(-1)">Firmar</button>
+                  <button class="btn btn-outline-primary mt-2" [disabled]="!primarySelected || !input.signatureAuthorizationAccepted" (click)="selectSigner(-1)">Firmar</button>
                 }
               </div></div>
               @for (o of input.occupants; track o.clientId; let i = $index) {
@@ -131,8 +134,7 @@
                   @if (o.signaturePngBase64) {
                     <div class="text-success">Firmado</div><img [src]="o.signaturePngBase64" [alt]="'Firma de ' + o.name" class="img-fluid" style="max-height:80px">
                   } @else {
-                    <div class="form-check mt-2"><input [id]="'signer-' + o.clientId" type="checkbox" class="form-check-input" [(ngModel)]="o.selected"><label [for]="'signer-' + o.clientId" class="form-check-label">Firma ahora</label></div>
-                    <button class="btn btn-outline-primary mt-2" [disabled]="!o.selected || !o.name.trim()" (click)="selectSigner(i)">Firmar</button>
+                    <button class="btn btn-outline-primary mt-2" [disabled]="!o.name.trim() || !input.signatureAuthorizationAccepted" (click)="selectSigner(i)">Firmar</button>
                   }
                 </div></div>
               }
@@ -155,16 +157,18 @@
             <div class="review-grid">
               <div><span>Firmas capturadas</span><strong>{{ signedCount }} de {{ totalSigners }}</strong></div>
               <div><span>Correo</span><strong>{{ dash(input.email) }}</strong></div>
-              <div class="form-check mt-3"><input id="mc" class="form-check-input" type="checkbox" [(ngModel)]="input.marketingConsent"><label class="form-check-label" for="mc">Acepto recibir promociones y beneficios de Vidanta junto con mis documentos.</label></div>
+              <div class="form-check mt-3"><input id="mc" class="form-check-input" type="checkbox" [(ngModel)]="input.marketingConsent"><label class="form-check-label" for="mc"><strong>Autorizo</strong> el envío de promociones y beneficios de Vidanta al correo indicado. Entiendo que es opcional y que no condiciona el registro ni el envío de mis documentos operativos.</label></div>
               <div><span>Celular</span><strong>{{ dash(input.cellPhone) }}</strong></div>
             </div>
             <div class="d-grid d-md-flex gap-3 mt-4">
-              <button class="btn btn-outline-primary" [disabled]="working" (click)="preview()">{{ working ? 'Generando…' : 'Descargar vista previa' }}</button>
-              <button class="btn btn-primary" [disabled]="!previewReady || !confirmSend || working || !input.primarySignaturePngBase64" (click)="upload()">Enviar a OPERA</button>
+              <button class="btn btn-outline-primary" [disabled]="working" (click)="preview()">{{ working ? 'Generando…' : 'Generar vista previa' }}</button>
+              @if (previewBlob) { <button class="btn btn-outline-secondary" type="button" (click)="downloadPreview()">Descargar copia</button> }
+              <button class="btn btn-primary" [disabled]="!previewReady || !confirmSend || working || !input.primarySignaturePngBase64 || !input.signatureAuthorizationAccepted" (click)="upload()">Enviar a OPERA (Concierge)</button>
             </div>
+            @if (previewUrl) { <div class="pdf-preview mt-4"><iframe [src]="previewUrl" title="Vista previa de la Tarjeta de Registro"></iframe></div> }
             <p class="small text-secondary mt-3">Puedes guardar el avance con firmas pendientes. Para enviar a OPERA se requiere la firma del titular; los pendientes conservarán su espacio en el PDF.</p>
             <div class="form-check mt-4"><input id="cs" class="form-check-input" type="checkbox" [(ngModel)]="confirmSend"><label class="form-check-label" for="cs">Revisé el documento y confirmo que las firmas y datos son correctos.</label></div>
-            @if (!previewReady) { <div class="small text-secondary mt-2">Primero descarga y revisa la vista previa.</div> }
+            @if (!previewReady) { <div class="small text-secondary mt-2">Primero genera y revisa la vista previa en esta pantalla.</div> }
             <div class="workflow-actions"><button class="btn btn-outline-secondary" (click)="step = 3; activeSigner = null; previewReady = false; confirmSend = false">Volver a firmantes</button><span></span></div>
           }
         </div>

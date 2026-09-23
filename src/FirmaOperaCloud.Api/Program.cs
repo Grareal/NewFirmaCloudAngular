@@ -149,10 +149,9 @@ builder.Services.AddScoped<PdfTemplateRenderService>();
 builder.Services.AddScoped<GuestEmailQueueService>();
 builder.Services.AddSingleton<IGuestEmailSender, SmtpEmailSender>();
 builder.Services.AddHttpClient("GuestDocuments", client => client.Timeout = TimeSpan.FromSeconds(45));
-if (builder.Configuration.GetValue("GuestEmail:Enabled", false))
-{
-    builder.Services.AddHostedService<GuestEmailWorker>();
-}
+// El worker debe existir aunque SMTP se habilite después desde la configuración
+// por hotel. El propio worker respeta Enabled y no intenta enviar si está apagado.
+builder.Services.AddHostedService<GuestEmailWorker>();
 
 // AddControllersWithViews registra los servicios de ViewFeatures que requiere
 // AutoValidateAntiforgeryTokenAttribute, aun cuando esta aplicación sólo expone API.
@@ -209,7 +208,7 @@ app.Use(async (context, next) =>
     context.Response.Headers["Referrer-Policy"] = "no-referrer";
     context.Response.Headers["Content-Security-Policy"] =
         "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; " +
-        "font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
+        "font-src 'self'; connect-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
     await next();
 });
 app.UseDefaultFiles();

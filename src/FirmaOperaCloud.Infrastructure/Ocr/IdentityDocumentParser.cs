@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace FirmaOperaCloud.Infrastructure.Ocr;
 
-/// <summary>Parser heurístico POC: MRZ pasaporte + CURP/clave elector/vigencia INE.</summary>
+/// <summary>Parser heurístico POC para INE, pasaporte, licencia, visa y tarjeta de residencia.</summary>
 public sealed record IdentityFields(
     string? DocType,
     string? FullName,
@@ -12,6 +12,7 @@ public sealed record IdentityFields(
     string? MrzLine1,
     string? MrzLine2,
     string? PassportNumber,
+    string? DocumentNumber,
     List<string> Warnings);
 
 public static partial class IdentityDocumentParser
@@ -34,11 +35,17 @@ public static partial class IdentityDocumentParser
     [GeneratedRegex(@"CLAVE\s*DE\s*ELECTOR\s*[:\-]?\s*([A-Z0-9]{16,18})", RegexOptions.IgnoreCase)]
     private static partial Regex ClaveRegex();
 
+    [GeneratedRegex(@"(?:N[ÚU]MERO\s+DE\s+DOCUMENTO|DOCUMENT\s+(?:NO|NUMBER)|NO\.?\s+DE\s+LICENCIA|LICEN[CS]E\s+(?:NO|NUMBER)|CARD\s+(?:NO|NUMBER)|N[ÚU]MERO\s+DE\s+TARJETA)\s*[:#\-]?\s*([A-Z0-9\-]{5,24})", RegexOptions.IgnoreCase)]
+    private static partial Regex DocumentNumberRegex();
+
+    [GeneratedRegex(@"(?:VIGENCIA|VENCE|EXPIRA|EXPIRATION|EXPIRY)\s*(?:HASTA|DATE)?\s*[:\-]?\s*(\d{2,4}(?:[\-/]\d{2,4}){0,2})", RegexOptions.IgnoreCase)]
+    private static partial Regex ExpiryRegex();
+
     public static IdentityFields Parse(string frontText, string? backText, string requestedType)
     {
         var all = $"{frontText}\n{backText ?? ""}".ToUpperInvariant().Replace('–', '-');
         var warnings = new List<string>();
-        string? mrz1 = null, mrz2 = null, passport = null, curp = null, clave = null, vigencia = null, name = null;
+        string? mrz1 = null, mrz2 = null, passport = null, documentNumber = null, curp = null, clave = null, vigencia = null, name = null;
 
         var lines = all.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         foreach (var l in lines)
@@ -73,6 +80,13 @@ public static partial class IdentityDocumentParser
             var mRango = VigenciaRangoRegex().Match(all);
             if (mRango.Success) vigencia = $"{mRango.Groups[1].Value}-{mRango.Groups[2].Value}";
         }
+        if (vigencia is null)
+        {
+            var mExpiry = ExpiryRegex().Match(all);
+            if (mExpiry.Success) vigencia = mExpiry.Groups[1].Value;
+        }
+        var mDocument = DocumentNumberRegex().Match(all);
+        if (mDocument.Success) documentNumber = OcrFix(mDocument.Groups[1].Value.ToUpperInvariant());
 
         // Nombre: anclado a etiqueta NOMBRE si existe, si no heurística anterior.
         name = NameAfterLabel(lines, "NOMBRE") ?? NameAfterLabel(lines, "NOMBRE / NAME")
@@ -83,18 +97,31 @@ public static partial class IdentityDocumentParser
         {
             var t when t.Contains("PAS") => "Pasaporte",
             var t when t.Contains("INE") => "INE",
-            _ => mrz1 is not null ? "Pasaporte" : curp is not null || clave is not null ? "INE" : "Desconocido"
+            var t when t.Contains("LIC") => "Licencia de conducir",
+            var t when t.Contains("RES") => "Tarjeta de residencia",
+            var t when t.Contains("VIS") => "Visa",
+            _ => mrz1 is not null ? "Pasaporte"
+                : curp is not null || clave is not null ? "INE"
+                : ContainsAny(all, "LICENCIA DE CONDUCIR", "LICENCIA PARA CONDUCIR", "DRIVER LICENSE", "DRIVER'S LICENSE") ? "Licencia de conducir"
+                : ContainsAny(all, "TARJETA DE RESIDENTE", "RESIDENT CARD", "RESIDENTE TEMPORAL", "RESIDENTE PERMANENTE", "INSTITUTO NACIONAL DE MIGRACION") ? "Tarjeta de residencia"
+                : ContainsAny(all, "VISA", "VISADO") ? "Visa"
+                : "Desconocido"
         };
 
         if (docType == "Pasaporte" && mrz1 is null) warnings.Add("No se detectó MRZ. Re-capture con buena luz, sin mica ni recorte.");
         if (docType == "Pasaporte" && mrz2 is not null && !VerifyPassportMrz(mrz2))
             warnings.Add("La MRZ no supera todos los dígitos verificadores; confirme los datos manualmente.");
         if (docType == "INE" && curp is null && clave is null) warnings.Add("No se detectó CURP ni clave de elector. Verifique enfoque e iluminación.");
+        if (docType is "Licencia de conducir" or "Tarjeta de residencia" or "Visa" && documentNumber is null)
+            warnings.Add("No se detectó el número del documento. Confírmelo manualmente contra el original.");
         if (curp is not null && !VerifyCurpChecksum(curp)) warnings.Add("CURP con dígito verificador inválido: capture de nuevo o corrija manual.");
         if (string.IsNullOrWhiteSpace(frontText) || frontText.Length < 20) warnings.Add("Texto OCR muy corto: imagen probablemente borrosa u oscura.");
 
-        return new IdentityFields(docType, name, curp, clave, vigencia, mrz1, mrz2, passport, warnings);
+        return new IdentityFields(docType, name, curp, clave, vigencia, mrz1, mrz2, passport, documentNumber, warnings);
     }
+
+    private static bool ContainsAny(string value, params string[] candidates) =>
+        candidates.Any(x => value.Contains(x, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Corrige confusiones OCR en zonas alfanuméricas: $→S, espacios, minúsculas.</summary>
     private static string OcrFix(string s) => s.Replace("$", "S").Replace(" ", "").Replace("'", "").Trim();

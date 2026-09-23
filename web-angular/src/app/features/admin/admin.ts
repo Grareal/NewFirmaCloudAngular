@@ -20,10 +20,10 @@ import { PdfTemplateSummary } from '../../core/models';
     <a class="admin-module" routerLink="/configuracion-correo"><span class="admin-module-icon">@@</span><strong>Correo SMTP</strong><small>Servidor, remitente, contenido y pruebas de envío.</small></a>
     <a class="admin-module" routerLink="/promociones"><span class="admin-module-icon">★</span><strong>Catálogo de promociones</strong><small>Códigos OPERA y textos aprobados para el huésped.</small></a>
     <a class="admin-module" routerLink="/codigos-promocion"><span class="admin-module-icon admin-module-icon-text">PRO</span><strong>Códigos de promoción</strong><small>Consultar catálogos OPERA, códigos UDFC02 y su uso en reservas.</small></a>
-    <a class="admin-module" routerLink="/acompanantes-opera"><span class="admin-module-icon">+</span><strong>Acompañantes OPERA</strong><small>Previsualizar y agregar perfiles adultos con verificación y auditoría UAT.</small></a>
+    <!-- Módulo de acompañantes oculto; el código y la ruta se conservan hasta decisión operativa. -->
     <a class="admin-module" routerLink="/historial"><span class="admin-module-icon">≡</span><strong>Historial</strong><small>Consultar las tarjetas almacenadas y sus estados.</small></a>
     <a class="admin-module" routerLink="/consulta-firmas"><span class="admin-module-icon">✍</span><strong>Auditoría de firmas</strong><small>Buscar firmantes y comparar evidencias.</small></a>
-    <a class="admin-module" routerLink="/operacion"><span class="admin-module-icon">⌕</span><strong>Probar operación</strong><small>Abrir el flujo móvil de búsqueda y firma.</small></a>
+    <!-- Acceso "Probar operación" oculto para la entrega de validación. -->
   </div>
   <section class="panel mt-4"><div class="page-kicker">Generación documental</div><h2 class="section-title mt-2 mb-3">Origen de la Registration Card</h2>
     <div class="row g-3 align-items-end">

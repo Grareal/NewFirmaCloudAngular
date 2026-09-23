@@ -31,7 +31,7 @@ export interface UdfCode { code: string; description: string; displayOrder: numb
 export interface OfficialCardInput {
   template?: string; localTemplateId?: string; citizenship?: string; city?: string; state?: string;
   country?: string; email?: string; cellPhone?: string; primaryGuestName?: string; primarySignerId?: string;
-  primarySignaturePngBase64?: string; marketingConsent: boolean; occupants: OfficialCardOccupantInput[];
+  primarySignaturePngBase64?: string; marketingConsent: boolean; signatureAuthorizationAccepted: boolean; occupants: OfficialCardOccupantInput[];
 }
 export interface OperaAttachmentResponse {
   attachmentId: string; fileName: string; fileSize: number; description?: string; template: string;
@@ -47,7 +47,7 @@ export interface StoredSignatureInfo {
 export interface ReservationLocalDocumentInfo {
   id: string; reservationFileId?: string; hotelId: string; confirmationNumber: string; roomNumber?: string; version: number;
   fileName: string; documentHash: string; status: string; attachmentId?: string; attachmentFileName?: string;
-  createdAtUtc: string; uploadedAtUtc?: string; signatureCount: number;
+  createdAtUtc: string; uploadedAtUtc?: string; signatureCount: number; isHidden: boolean; hiddenAtUtc?: string; hiddenBy?: string; hiddenReason?: string;
 }
 export interface ReservationFileInfo {
   id: string; hotelId: string; confirmationNumber: string; reservationId?: string; version: number;
@@ -109,7 +109,7 @@ export interface AccompanyingGuestChangePreview {
 }
 export interface AccompanyingGuestChangeResult { auditId: string; correlationId: string; before: AccompanyingGuestChangePreview; after: AccompanyingGuestChangePreview; operaResponse: string }
 
-export interface OcrIdentityFields { docType?: string; fullName?: string; curp?: string; claveElector?: string; vigencia?: string; passportNumber?: string; mrzLine1?: string; mrzLine2?: string }
+export interface OcrIdentityFields { docType?: string; fullName?: string; curp?: string; claveElector?: string; vigencia?: string; passportNumber?: string; documentNumber?: string; mrzLine1?: string; mrzLine2?: string }
 export interface OcrParseResult {
   docType: string; frontConfidence: number; backConfidence?: number; frontText: string; backText?: string;
   fields: OcrIdentityFields; fieldConfidences: Record<string, number>; warnings: string[]; humanReviewRequired: boolean;
