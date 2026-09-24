@@ -19,7 +19,7 @@ export const routes: Routes = [
   { path: 'promociones', loadComponent: () => import('./features/promociones/promociones').then(m => m.PromocionesComponent), canActivate: [authGuard], data: { permission: P.Promotions } },
   { path: 'codigos-promocion', loadComponent: () => import('./features/promociones/codigos').then(m => m.CodigosComponent), canActivate: [authGuard], data: { permission: P.Promotions } },
   { path: 'udf', redirectTo: 'codigos-promocion', pathMatch: 'full' },
-  { path: 'acompanantes-opera', loadComponent: () => import('./features/acompanantes/acompanantes').then(m => m.AcompanantesComponent), canActivate: [authGuard], data: { permission: P.AccompanyingGuests } },
+  { path: 'acompanantes-opera', redirectTo: 'operacion', pathMatch: 'full' },
   { path: 'usuarios', loadComponent: () => import('./features/usuarios/usuarios').then(m => m.UsuariosComponent), canActivate: [authGuard], data: { permission: P.UserAdministration } },
   { path: 'admin', loadComponent: () => import('./features/admin/admin').then(m => m.AdminComponent), canActivate: [authGuard], data: { permission: P.UserAdministration } },
   { path: 'captura-identidad', loadComponent: () => import('./features/ocr/captura-identidad').then(m => m.CapturaIdentidadComponent), canActivate: [authGuard], data: { permission: P.RegistrationCard } },

@@ -297,6 +297,29 @@ main {
   background: linear-gradient(to bottom, transparent 78%, #c7d3e1 79%, transparent 80%);
 }
 
+.sidebar-menu {
+  display: contents;
+}
+
+.nav-toggle {
+  display: none;
+  width: 46px;
+  height: 46px;
+  padding: 0.7rem;
+  color: #fff;
+  background: rgb(255 255 255 / 10%);
+  border: 1px solid rgb(255 255 255 / 25%);
+  border-radius: 0.7rem;
+}
+
+.nav-toggle span {
+  display: block;
+  height: 2px;
+  margin: 4px 0;
+  background: currentColor;
+  border-radius: 999px;
+}
+
 .pdf-preview {
   overflow: hidden;
   background: #eef2f6;
@@ -338,17 +361,43 @@ main {
   .page { display: block; }
 
   .sidebar {
-    position: relative;
+    position: sticky;
+    z-index: 1050;
+    top: 0;
     width: 100%;
     height: auto;
     max-height: none;
   }
 
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 76px;
+    padding: 0.65rem 1rem;
+  }
+
   .sidebar .brand {
-    grid-template-columns: minmax(180px, 250px) 1fr;
+    width: min(250px, calc(100% - 62px));
+    padding: 0;
     align-items: center;
   }
 
+  .brand-logo-frame {
+    min-height: 48px;
+    padding: 0.5rem 0.7rem;
+  }
+
+  .nav-toggle { display: block; }
+  .sidebar-menu {
+    display: none;
+    max-height: calc(100dvh - 76px);
+    overflow-y: auto;
+    padding-bottom: 0.25rem;
+    border-top: 1px solid rgb(255 255 255 / 12%);
+  }
+  .sidebar-menu.open { display: block; }
   .brand-app { display: none; }
   .sidebar .nav { padding-bottom: 0.5rem; }
   .user-card { margin-bottom: 1rem; }
@@ -356,7 +405,7 @@ main {
 
 @media (max-width: 540px) {
   body { font-size: 0.9rem; }
-  .sidebar .brand { grid-template-columns: minmax(0, 230px); }
+  .sidebar .brand { width: min(210px, calc(100% - 58px)); }
   .content { padding: 1rem 0.85rem 2rem; }
   .pdf-preview iframe { min-height: 440px; }
 }

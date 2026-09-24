@@ -1,0 +1,134 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.signature-workflow {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.signature-layout {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.signature-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.signer-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem 1rem;
+  align-items: center;
+  min-height: 112px;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: #fff;
+}
+
+.signer-card.is-signed {
+  border-color: rgb(83 102 83 / 35%);
+  background: rgb(83 102 83 / 5%);
+}
+
+.signer-card strong,
+.signer-role {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.signer-role {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.signed-label {
+  color: #3f603f;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.signature-thumbnail {
+  grid-column: 1 / -1;
+  display: block;
+  width: min(100%, 260px);
+  max-height: 74px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.signature-capture {
+  padding: clamp(1rem, 2vw, 1.4rem);
+  border: 1px solid rgb(0 53 148 / 24%);
+  border-radius: 1rem;
+  background: var(--vidanta-blue-soft);
+}
+
+.signature-capture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.consent-panel .form-check-input,
+.consent-card .form-check-input {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-top: 0.15rem;
+}
+
+.review-grid .consent-card {
+  grid-column: 1 / -1;
+  padding-left: 2.8rem;
+}
+
+@media (min-width: 900px) {
+  .signature-layout {
+    grid-template-columns: minmax(250px, 0.72fr) minmax(0, 1.65fr);
+  }
+
+  .reservation-summary {
+    position: sticky;
+    top: 1.25rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .signer-card {
+    min-height: 96px;
+  }
+
+  .workflow-actions,
+  .signature-capture-actions {
+    align-items: stretch;
+  }
+
+  .workflow-actions .btn,
+  .signature-capture-actions .btn {
+    flex: 1 1 100%;
+    min-height: 46px;
+  }
+}
+
+@media (max-width: 420px) {
+  .signer-card {
+    grid-template-columns: 1fr;
+  }
+
+  .signer-card .btn {
+    width: 100%;
+  }
+}

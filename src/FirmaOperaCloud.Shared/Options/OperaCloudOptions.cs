@@ -43,4 +43,27 @@ public sealed class OperaCloudOptions
     /// salvo que el ambiente las habilite explícitamente (actualmente solo UAT).
     /// </summary>
     public bool AllowAccompanyingGuestWrites { get; set; }
+
+    /// <summary>
+    /// Define qué hacer cuando OPERA ya contiene una Registration Card firmada:
+    /// Replace, SkipIfExists o KeepAllVersions.
+    /// </summary>
+    public string RegistrationCardAttachmentPolicy { get; set; } = RegistrationCardAttachmentPolicies.KeepAllVersions;
+}
+
+public static class RegistrationCardAttachmentPolicies
+{
+    public const string Replace = "Replace";
+    public const string SkipIfExists = "SkipIfExists";
+    public const string KeepAllVersions = "KeepAllVersions";
+
+    public static bool IsValid(string? value) =>
+        value is not null && All.Any(item => item.Equals(value, StringComparison.OrdinalIgnoreCase));
+
+    public static string Normalize(string? value) =>
+        All.FirstOrDefault(item => item.Equals(value, StringComparison.OrdinalIgnoreCase))
+        ?? throw new InvalidOperationException(
+            $"OperaCloud:RegistrationCardAttachmentPolicy debe ser {string.Join(", ", All)}.");
+
+    public static readonly IReadOnlyList<string> All = [Replace, SkipIfExists, KeepAllVersions];
 }

@@ -16,6 +16,7 @@ export class App {
   env = '';
   connectionError = '';
   logoutError = '';
+  menuOpen = false;
 
   constructor() {
     this.loadEnvironment();
@@ -31,6 +32,9 @@ export class App {
 
   has(p: string) { return this.auth.hasPermission(p) || this.auth.role === 'Admin'; }
   get initial() { return (this.auth.displayName || 'U').slice(0, 1).toUpperCase(); }
+  closeNavigation(event: Event) {
+    if ((event.target as HTMLElement).closest('a')) this.menuOpen = false;
+  }
   logout() {
     this.logoutError = '';
     this.auth.logout().subscribe({

@@ -118,7 +118,7 @@ public sealed class OperaRegistrationCardService : IOperaRegistrationCardService
             item.TryGetProperty("description", out var description) ? description.GetString() : null)).ToList();
     }
 
-    public async Task<OperaAttachmentResult> UploadPdfAsync(
+    public async Task<OperaAttachmentUploadResult> UploadPdfAsync(
         string hotelId,
         string reservationId,
         string confirmationNumber,
@@ -128,22 +128,25 @@ public sealed class OperaRegistrationCardService : IOperaRegistrationCardService
         string? documentVersion = null)
     {
         var safeConfirmation = new string(confirmationNumber.Where(char.IsLetterOrDigit).ToArray());
-        var safeVersion = string.IsNullOrWhiteSpace(documentVersion)
-            ? string.Empty
-            : "-" + new string(documentVersion.Where(char.IsLetterOrDigit).ToArray());
+        var policy = RegistrationCardAttachmentPolicies.Normalize(_options.RegistrationCardAttachmentPolicy);
+        if (policy == RegistrationCardAttachmentPolicies.KeepAllVersions && string.IsNullOrWhiteSpace(documentVersion))
+            throw new InvalidOperationException("KeepAllVersions requiere la versión local de la Registration Card.");
+        var safeVersion = policy == RegistrationCardAttachmentPolicies.KeepAllVersions
+            ? "-V" + new string(documentVersion!.Where(char.IsLetterOrDigit).ToArray())
+            : string.Empty;
         var fileName = $"REGCARD{safeConfirmation}SIGNED{safeVersion}.pdf";
         var existing = (await GetAttachmentsAsync(hotelId, reservationId, cancellationToken))
             .FirstOrDefault(item => item.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase));
-        if (existing is not null)
+        if (existing is not null && policy != RegistrationCardAttachmentPolicies.Replace)
         {
-            return existing;
+            return ToUploadResult(existing, OperaAttachmentUploadOutcomes.SkippedExisting);
         }
 
         var payload = new
         {
             fileName,
             linkId = reservationId,
-            overwriteExistingFileYN = "N",
+            overwriteExistingFileYN = policy == RegistrationCardAttachmentPolicies.Replace ? "Y" : "N",
             description = "Registration Card firmada electrónicamente desde Firma Opera Cloud",
             linkType = "Reservation",
             hotelId,
@@ -164,8 +167,14 @@ public sealed class OperaRegistrationCardService : IOperaRegistrationCardService
 
         var uploaded = (await GetAttachmentsAsync(hotelId, reservationId, cancellationToken))
             .FirstOrDefault(item => item.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase));
-        return uploaded ?? throw new InvalidOperationException("OPERA aceptó el archivo, pero no fue posible recuperarlo desde la reservación.");
+        var result = uploaded ?? throw new InvalidOperationException("OPERA aceptó el archivo, pero no fue posible recuperarlo desde la reservación.");
+        return ToUploadResult(result, existing is not null
+            ? OperaAttachmentUploadOutcomes.Replaced
+            : OperaAttachmentUploadOutcomes.Uploaded);
     }
+
+    private static OperaAttachmentUploadResult ToUploadResult(OperaAttachmentResult value, string outcome) =>
+        new(value.AttachmentId, value.FileName, value.FileSize, value.Description, outcome);
 
     private async Task<HttpResponseMessage> SendAsync(
         HttpMethod method,

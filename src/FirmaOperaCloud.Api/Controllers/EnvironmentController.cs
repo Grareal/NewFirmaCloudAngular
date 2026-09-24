@@ -16,6 +16,7 @@ public sealed class EnvironmentController(IConfiguration configuration, IWebHost
             .FirstOrDefault(x => x.Length == 2 && (x[0].Equals("Database", StringComparison.OrdinalIgnoreCase) || x[0].Equals("Initial Catalog", StringComparison.OrdinalIgnoreCase)))?[1] ?? "";
         var gateway = Uri.TryCreate(opera.GatewayUrl, UriKind.Absolute, out var uri) ? uri.Host : opera.GatewayUrl;
         var isUat = gateway.Contains("oc-test.com", StringComparison.OrdinalIgnoreCase) && database.EndsWith("_UAT", StringComparison.OrdinalIgnoreCase);
-        return Ok(new { environment = environment.EnvironmentName, isUat, hotelId = opera.DefaultHotelId, database, gateway });
+        return Ok(new { environment = environment.EnvironmentName, isUat, hotelId = opera.DefaultHotelId, database, gateway,
+            registrationCardAttachmentPolicy = opera.RegistrationCardAttachmentPolicy });
     }
 }

@@ -14,6 +14,7 @@ services:
       OperaCloud__EnterpriseId: ${OperaCloud__EnterpriseId}
       OperaCloud__Scope: ${OperaCloud__Scope}
       OperaCloud__DefaultHotelId: ${OperaCloud__DefaultHotelId:-VINV}
+      OperaCloud__RegistrationCardAttachmentPolicy: ${OperaCloud__RegistrationCardAttachmentPolicy:-KeepAllVersions}
       DATA_PROTECTION_KEYS_PATH: /keys
     volumes:
       - data-protection-keys:/keys

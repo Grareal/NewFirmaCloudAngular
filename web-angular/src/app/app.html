@@ -2,10 +2,15 @@
 <div class="page">
   @if (showNav) {
   <div class="sidebar">
-    <a class="brand" routerLink="/" aria-label="Ir al inicio de Firma Vidanta">
-      <span class="brand-logo-frame"><img class="brand-logo" src="/GrupoVidanta-Logo.png" alt="Grupo Vidanta"></span>
-
-    </a>
+    <div class="sidebar-header">
+      <a class="brand" routerLink="/" aria-label="Ir al inicio de Firma Vidanta">
+        <span class="brand-logo-frame"><img class="brand-logo" src="/GrupoVidanta-Logo.png" alt="Grupo Vidanta"></span>
+      </a>
+      <button class="nav-toggle" type="button" (click)="menuOpen = !menuOpen" [attr.aria-expanded]="menuOpen" aria-controls="primary-navigation" aria-label="Abrir o cerrar menú principal">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div id="primary-navigation" class="sidebar-menu" [class.open]="menuOpen" (click)="closeNavigation($event)">
     <div class="nav-section-label">Operación</div>
     <nav class="nav flex-column">
       @if (has('operation')) { <a class="nav-link" routerLink="/operacion" routerLinkActive="active">⌕ Registro y firma</a> }
@@ -24,13 +29,13 @@
         <a class="nav-link" routerLink="/promociones" routerLinkActive="active">★ Promociones</a>
         <a class="nav-link" routerLink="/codigos-promocion" routerLinkActive="active">Códigos de promoción</a>
       }
-      <!-- Acompañantes OPERA permanece implementado, pero oculto hasta definición de María Guadalupe/Operación. -->
       @if (has('user-administration')) {
         <a class="nav-link" routerLink="/admin" routerLinkActive="active">⚙ Panel administrador</a>
         <a class="nav-link" routerLink="/usuarios" routerLinkActive="active">👥 Usuarios y grupos</a>
       }
     </nav>
-    <div class="user-card"><span class="avatar">{{ initial }}</span><span><strong>{{ auth.displayName }}</strong><br><small>{{ auth.role }}</small></span><button type="button" class="btn btn-sm btn-outline-light ms-auto" (click)="logout()">↗</button></div>
+      <div class="user-card"><span class="avatar">{{ initial }}</span><span><strong>{{ auth.displayName }}</strong><br><small>{{ auth.role }}</small></span><button type="button" class="btn btn-sm btn-outline-light ms-auto" (click)="logout()" aria-label="Cerrar sesión">↗</button></div>
+    </div>
   </div>
   }
   <main>

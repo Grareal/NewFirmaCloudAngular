@@ -29,8 +29,11 @@ if (Uri.TryCreate(keyVaultUri, UriKind.Absolute, out var vaultUri))
 
 GlobalFontSettings.UseWindowsFontsUnderWindows = true;
 
-builder.Services.Configure<OperaCloudOptions>(
-    builder.Configuration.GetSection(OperaCloudOptions.SectionName));
+builder.Services.AddOptions<OperaCloudOptions>()
+    .Bind(builder.Configuration.GetSection(OperaCloudOptions.SectionName))
+    .Validate(options => RegistrationCardAttachmentPolicies.IsValid(options.RegistrationCardAttachmentPolicy),
+        $"OperaCloud:RegistrationCardAttachmentPolicy debe ser {string.Join(", ", RegistrationCardAttachmentPolicies.All)}.")
+    .ValidateOnStart();
 builder.Services.Configure<GuestEmailOptions>(
     builder.Configuration.GetSection(GuestEmailOptions.SectionName));
 
@@ -366,6 +369,7 @@ static void ShowEnvironmentBanner(WebApplication app)
     Console.WriteLine($" FIRMA OPERA CLOUD -> {environment.ToUpperInvariant()}");
     Console.WriteLine($" OHIP:  {gateway}");
     Console.WriteLine($" HOTEL: {opera.DefaultHotelId}");
+    Console.WriteLine($" REGCARD: {opera.RegistrationCardAttachmentPolicy}");
     Console.WriteLine($" DB:    {database}");
     Console.WriteLine(isProduction ? " ATENCIÓN: configuración de producción" :
         isUat ? " UAT CONFIRMADO: OHIP UAT + BASE UAT" :

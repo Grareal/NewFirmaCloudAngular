@@ -8,6 +8,20 @@ public sealed record OperaAttachmentResult(
     int FileSize,
     string? Description);
 
+public static class OperaAttachmentUploadOutcomes
+{
+    public const string Uploaded = "Uploaded";
+    public const string Replaced = "Replaced";
+    public const string SkippedExisting = "SkippedExisting";
+}
+
+public sealed record OperaAttachmentUploadResult(
+    string AttachmentId,
+    string FileName,
+    int FileSize,
+    string? Description,
+    string Outcome);
+
 public interface IOperaRegistrationCardService
 {
     string ResolveTemplate(Reservation reservation, string? requestedTemplate = null);
@@ -24,7 +38,7 @@ public interface IOperaRegistrationCardService
         string reservationId,
         CancellationToken cancellationToken = default);
 
-    Task<OperaAttachmentResult> UploadPdfAsync(
+    Task<OperaAttachmentUploadResult> UploadPdfAsync(
         string hotelId,
         string reservationId,
         string confirmationNumber,

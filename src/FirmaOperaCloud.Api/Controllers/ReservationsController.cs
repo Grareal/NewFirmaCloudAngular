@@ -309,11 +309,14 @@ public sealed class ReservationsController : ControllerBase
             confirmationNumber,
             filledPdf,
             userName,
-            cancellationToken);
+            cancellationToken,
+            stored.Document.Version.ToString(System.Globalization.CultureInfo.InvariantCulture));
         stored.Document.AttachmentId = attachment.AttachmentId;
         stored.Document.AttachmentFileName = attachment.FileName;
-        stored.Document.Status = "Uploaded";
-        stored.Document.UploadedAtUtc = DateTime.UtcNow;
+        stored.Document.Status = attachment.Outcome;
+        stored.Document.UploadedAtUtc = attachment.Outcome == OperaAttachmentUploadOutcomes.SkippedExisting
+            ? null
+            : DateTime.UtcNow;
         await HttpContext.RequestServices.GetRequiredService<FirmaOperaCloud.Infrastructure.Persistence.FirmaOperaCloudDbContext>().SaveChangesAsync(cancellationToken);
         GuestEmailDelivery? emailDelivery = null;
         var emailStatus = "SkippedNoEmail";
@@ -334,6 +337,8 @@ public sealed class ReservationsController : ControllerBase
             attachment.FileName,
             attachment.FileSize,
             attachment.Description,
+            AttachmentOutcome = attachment.Outcome,
+            AttachmentPolicy = _options.RegistrationCardAttachmentPolicy,
             Template = context.LocalTemplate?.Name ?? context.OperaTemplate,
             LocalDocumentId = stored.Document.Id,
             LocalDocumentVersion = stored.Document.Version,

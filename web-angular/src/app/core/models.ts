@@ -23,7 +23,7 @@ export interface Reservation {
 export interface AuthSession {
   username: string; displayName: string; role: string; permissions: string[];
 }
-export interface ApiEnvironmentInfo { environment: string; isUat: boolean; hotelId: string; database: string; gateway: string }
+export interface ApiEnvironmentInfo { environment: string; isUat: boolean; hotelId: string; database: string; gateway: string; registrationCardAttachmentPolicy?: string }
 
 export interface OfficialCardOccupantInput { clientId?: string; signerId?: string; name: string; signaturePngBase64: string; selected: boolean }
 export interface SignatureDraft { revision: string | null; input: OfficialCardInput | null; updatedAtUtc: string | null }
@@ -36,7 +36,7 @@ export interface OfficialCardInput {
 export interface OperaAttachmentResponse {
   attachmentId: string; fileName: string; fileSize: number; description?: string; template: string;
   documentHash: string; localDocumentId?: string; localDocumentVersion?: number;
-  emailDeliveryId?: string; emailStatus?: string;
+  emailDeliveryId?: string; emailStatus?: string; attachmentOutcome?: 'Uploaded' | 'Replaced' | 'SkippedExisting'; attachmentPolicy?: string;
 }
 
 export interface StoredSignatureInfo {
