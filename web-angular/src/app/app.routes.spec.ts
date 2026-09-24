@@ -42,7 +42,10 @@ describe('Application route recognition', () => {
   it.each(urls)('recognizes %s without a navigation error', async url => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(url, RouteProbe);
-    expect(TestBed.inject(Router).url).toBe(url === '/udf' ? '/codigos-promocion' : url === '/busqueda' ? '/operacion' : url);
+    const expectedUrl = url === '/udf'
+      ? '/codigos-promocion'
+      : ['/busqueda', '/acompanantes-opera'].includes(url) ? '/operacion' : url;
+    expect(TestBed.inject(Router).url).toBe(expectedUrl);
     expect(failures).toEqual([]);
   });
 

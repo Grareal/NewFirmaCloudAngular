@@ -18,10 +18,21 @@ $env:OperaCloud__ClientSecret = '<client secret>'
 $env:OperaCloud__EnterpriseId = '<enterprise id>'
 $env:OperaCloud__Scope = '<scope>'
 $env:OperaCloud__DefaultHotelId = 'VINV'
+$env:OperaCloud__RegistrationCardAttachmentPolicy = 'KeepAllVersions'
 dotnet run --project src/FirmaOperaCloud.Api
 
 Al cerrar la terminal desaparecen. No use `setx` en equipos compartidos y no pegue
 valores reales en documentación, commits, Dockerfiles o GitHub Actions.
+
+## Política de Registration Cards en OPERA
+
+`OperaCloud__RegistrationCardAttachmentPolicy` acepta exclusivamente:
+
+- `KeepAllVersions` (predeterminado): sube `REGCARD{confirmación}SIGNED-V{n}.pdf` y conserva todas las versiones.
+- `Replace`: mantiene un nombre estable y solicita a OPERA reemplazar el archivo existente.
+- `SkipIfExists`: conserva el adjunto existente y registra localmente que la nueva versión no fue enviada.
+
+El valor se valida al iniciar la aplicación. Cambiarlo requiere reiniciar el servicio.
 
 ## Azure Key Vault
 

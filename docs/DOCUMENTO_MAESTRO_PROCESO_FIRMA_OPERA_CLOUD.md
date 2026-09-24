@@ -21,7 +21,7 @@ Este documento se entrega para validar **cómo se desarrollará y operará la so
 
 El flujo propuesto inicia con el acceso individual del colaborador y la búsqueda de una reserva en OPERA. La aplicación toma los datos disponibles, presenta los acompañantes sin permitir altas o bajas locales, captura y revisa la identificación, solicita la aceptación legal antes de firmar, genera una vista previa dentro de la misma pantalla y permite que Concierge envíe la tarjeta a OPERA.
 
-La aplicación conserva versiones locales para auditoría. Una versión cargada por error se puede **ocultar o restaurar**, pero no se elimina físicamente ni se elimina el adjunto ya enviado a OPERA. Cada reenvío genera una nueva versión y, actualmente, un nuevo adjunto en OPERA.
+La aplicación conserva versiones locales para auditoría. Una versión cargada por error se puede **ocultar o restaurar**, pero no se elimina físicamente. El tratamiento del adjunto en OPERA se controla mediante una política de configuración: conservar todas las versiones, reemplazar el adjunto estable o no subir cuando ya existe.
 
 Se mantienen temporalmente el correo por SMTP institucional y el inicio de sesión local. La definición final debe ser una cuenta funcional institucional para correo y una identidad corporativa individual para cada operador; no se recomienda usar cuentas personales.
 
@@ -126,7 +126,7 @@ Decisión recomendada: usar temporalmente SMTP con una cuenta funcional instituc
 - La aplicación conserva documentos y versiones locales con trazabilidad.
 - Los documentos visibles pueden ocultarse indicando un motivo; un administrador autorizado puede incluir ocultos en la consulta y restaurarlos.
 - Ocultar es una baja lógica: no borra el archivo, la auditoría ni un adjunto ya enviado a OPERA.
-- Una nueva generación o reenvío no reemplaza la versión anterior; crea una nueva versión local y actualmente un nuevo adjunto en OPERA.
+- Una nueva generación siempre crea una versión local. En OPERA se aplica `KeepAllVersions`, `Replace` o `SkipIfExists`, según la configuración del ambiente.
 - La eliminación física deberá sujetarse a la política de conservación, protección de datos y capacidades de OPERA.
 
 ## 5. Casos operativos que requieren regla explícita
@@ -169,7 +169,7 @@ Un usuario con permiso de sellado documental lo oculta con un motivo. La acción
 | Ajustes responsive para tableta | Implementados en CSS; falta validación física |
 | Autenticación corporativa | No implementada; pendiente de decisión |
 | Actualización de datos de perfil en OPERA | No implementada; pendiente de alcance |
-| Reemplazo/eliminación de adjuntos en OPERA | No implementado; pendiente de regla y capacidad OHIP |
+| Política de versiones de adjuntos en OPERA | Implementada y configurable; `KeepAllVersions` es el valor predeterminado |
 
 ## 7. Matriz de decisiones para aprobación
 

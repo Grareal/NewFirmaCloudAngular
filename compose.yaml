@@ -32,8 +32,7 @@ services:
 
       # Hotel por defecto cuando no se especifica uno
       OperaCloud__DefaultHotelId: ${OperaCloud__DefaultHotelId:-VINV}
-
-      # Ruta donde ASP.NET almacenará las llaves de Data Protection
+      OperaCloud__RegistrationCardAttachmentPolicy: ${OperaCloud__RegistrationCardAttachmentPolicy:-KeepAllVersions}
       DATA_PROTECTION_KEYS_PATH: /keys
 
     # Volumen persistente para conservar llaves criptográficas

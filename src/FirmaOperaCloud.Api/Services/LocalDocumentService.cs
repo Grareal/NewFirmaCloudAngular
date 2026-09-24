@@ -63,7 +63,26 @@ public sealed class LocalDocumentService(
                 "PrimaryGuest", input.PrimarySignaturePngBase64, 0)
         };
         candidates.AddRange(input.Occupants.Select((x, i) => (x.Name, x.SignerId, "Occupant", (string?)x.SignaturePngBase64, i + 1)));
-        foreach (var item in candidates)
+        var namesBackedById = candidates
+            .Where(x => !string.IsNullOrWhiteSpace(x.Id))
+            .Select(x => NormalizeSignerName(x.Name))
+            .ToHashSet(StringComparer.Ordinal);
+        var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var seenLocalNames = new HashSet<string>(StringComparer.Ordinal);
+        var uniqueCandidates = new List<(string Name, string? Id, string Role, string? Png, int Position)>();
+        foreach (var candidate in candidates)
+        {
+            var nameKey = NormalizeSignerName(candidate.Name);
+            if (string.IsNullOrWhiteSpace(nameKey)) continue;
+            if (!string.IsNullOrWhiteSpace(candidate.Id))
+            {
+                if (!seenIds.Add(candidate.Id.Trim())) continue;
+            }
+            else if (namesBackedById.Contains(nameKey) || !seenLocalNames.Add(nameKey)) continue;
+            uniqueCandidates.Add(candidate);
+        }
+
+        foreach (var item in uniqueCandidates)
         {
             if (string.IsNullOrWhiteSpace(item.Png)) continue;
             var signature = CreateSignature(r, confirmation, reservationId, item.Name, item.Id, item.Role, item.Png, user);
@@ -91,11 +110,13 @@ public sealed class LocalDocumentService(
     private static StoredSignature CreateSignature(Reservation r, string confirmation, string? reservationId, string name, string? externalId, string role, string? base64, string? user)
     {
         if (string.IsNullOrWhiteSpace(base64)) throw new InvalidOperationException($"Falta la firma de {name}."); var comma = base64.IndexOf(','); var bytes = Convert.FromBase64String(comma >= 0 ? base64[(comma + 1)..] : base64);
-        var normalized = string.Join(' ', name.Trim().ToUpperInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        var normalized = NormalizeSignerName(name);
         return new StoredSignature { HotelId = r.HotelId, ConfirmationNumber = confirmation, ReservationId = reservationId, RoomNumber = r.RoomStay.RoomId,
             SignerName = name.Trim(), OperaProfileId = string.IsNullOrWhiteSpace(externalId) ? null : externalId.Trim(), SignerKey = string.IsNullOrWhiteSpace(externalId) ? $"LOCAL:{r.HotelId}:{confirmation}:{normalized}" : $"OPERA:{externalId.Trim()}",
             SignerRole = role, SignaturePng = bytes, SignatureHash = Convert.ToHexString(SHA256.HashData(bytes)), CapturedBy = user };
     }
+    private static string NormalizeSignerName(string name) =>
+        string.Join(' ', name.Trim().ToUpperInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries));
     private static string Value(PdfTemplateField f, Reservation r, FillOfficialRegistrationCardRequest x) => f.FieldKey switch { "ConfirmationNumber" => r.ConfirmationNumber ?? "", "GuestFullName" => x.PrimaryGuestName ?? r.Guest.FullName, "ArrivalDate" => r.RoomStay.ArrivalDate, "DepartureDate" => r.RoomStay.DepartureDate, "RoomNumber" => r.RoomStay.RoomId, "RoomType" => r.RoomStay.RoomType, "Adults" => r.RoomStay.AdultCount.ToString(), "Children" => r.RoomStay.ChildCount.ToString(), "Email" => x.Email ?? r.Guest.Email, "Phone" => x.CellPhone ?? r.Guest.PhoneNumber, "City" => x.City ?? r.Guest.Address.City, "State" => x.State ?? r.Guest.Address.StateProvCode, "Country" => x.Country ?? r.Guest.Address.CountryCode, "Citizenship" => x.Citizenship ?? "", "RateAmount" => $"{r.RoomStay.RateAmount:0.00} {r.RoomStay.CurrencyCode}", "OccupantName" => x.Occupants.ElementAtOrDefault((f.OccupantIndex ?? 1) - 1)?.Name ?? "", _ => "" };
     private static void DrawSignature(XGraphics g, string? base64, XRect box) { if (string.IsNullOrWhiteSpace(base64)) return; var comma=base64.IndexOf(','); var bytes=Convert.FromBase64String(comma>=0?base64[(comma+1)..]:base64); using var s=new MemoryStream(bytes); using var image=XImage.FromStream(s); var scale=Math.Min(box.Width/image.PointWidth,box.Height/image.PointHeight); var w=image.PointWidth*scale; var h=image.PointHeight*scale; g.DrawImage(image,box.X+(box.Width-w)/2,box.Y+(box.Height-h)/2,w,h); }
 }

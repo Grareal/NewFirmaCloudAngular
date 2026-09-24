@@ -1,15 +1,76 @@
 import { Component, ViewChild, inject, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
-import { OfficialCardInput, OfficialCardOccupantInput, Reservation, SignatureDraft } from '../../core/models';
+import { OfficialCardInput, OfficialCardOccupantInput, Reservation } from '../../core/models';
 import { SignatureCanvasComponent } from '../../shared/signature-canvas';
+
+const normalizedName = (value?: string) => (value ?? '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .toLocaleUpperCase('es-MX');
+
+/** Fusiona las dos representaciones solapadas de acompañantes que entrega OPERA. */
+export function reconcileOccupants(
+  reservation: Reservation,
+  existing: OfficialCardOccupantInput[],
+  createId: () => string = () => crypto.randomUUID()
+): OfficialCardOccupantInput[] {
+  const primaryName = normalizedName(reservation.guest.fullName);
+  const primaryId = reservation.guest.id?.trim();
+  const detailed = (reservation.accompanyingGuests ?? []).map(guest => ({
+    name: guest.fullName?.replace(/\s+/g, ' ').trim(),
+    signerId: (guest.profileId ?? guest.reservationGuestId)?.trim() || undefined
+  }));
+  const candidates = detailed.concat(
+    (reservation.accompanyingGuestNames ?? []).map(name => ({
+      name: name?.replace(/\s+/g, ' ').trim(),
+      signerId: undefined
+    }))
+  );
+  const result: OfficialCardOccupantInput[] = [];
+  const seenIds = new Set<string>();
+  const usedSavedIds = new Set<string>();
+  const detailedNames = new Set(detailed.filter(item => item.signerId).map(item => normalizedName(item.name)));
+
+  for (const candidate of candidates) {
+    const nameKey = normalizedName(candidate.name);
+    if (!nameKey || nameKey === primaryName || (candidate.signerId && candidate.signerId === primaryId)) continue;
+    if (candidate.signerId) {
+      if (seenIds.has(candidate.signerId)) continue;
+      seenIds.add(candidate.signerId);
+    } else if (detailedNames.has(nameKey) || result.some(item => !item.signerId && normalizedName(item.name) === nameKey)) {
+      continue;
+    }
+
+    const available = existing.filter(item => !item.clientId || !usedSavedIds.has(item.clientId));
+    const exactIdMatches = candidate.signerId ? available.filter(item => item.signerId === candidate.signerId) : [];
+    const savedCandidates = exactIdMatches.length
+      ? exactIdMatches
+      : available.filter(item => normalizedName(item.name) === nameKey);
+    const saved = savedCandidates.find(item => !!item.signaturePngBase64) ?? savedCandidates[0];
+    if (saved?.clientId) usedSavedIds.add(saved.clientId);
+    result.push({
+      clientId: saved?.clientId || createId(),
+      signerId: candidate.signerId,
+      name: candidate.name,
+      signaturePngBase64: saved?.signaturePngBase64 || '',
+      selected: true
+    });
+    if (result.length === 8) break;
+  }
+
+  return result;
+}
 
 @Component({
   selector: 'app-tarjeta',
   imports: [FormsModule, RouterLink, SignatureCanvasComponent],
-  templateUrl: './tarjeta.html'
+  templateUrl: './tarjeta.html',
+  styleUrl: './tarjeta.css'
 
 })
 export class TarjetaComponent implements OnInit, OnDestroy {
@@ -18,19 +79,15 @@ export class TarjetaComponent implements OnInit, OnDestroy {
   private sanitizer = inject(DomSanitizer);
   @ViewChild('pad') pad?: SignatureCanvasComponent;
   confirmation = '';
-  steps = [{ n: 1, label: 'Datos' }, { n: 2, label: 'Ocupantes' }, { n: 3, label: 'Firmas' }, { n: 4, label: 'Revisión' }];
-  step = 1; activeSigner: number | null = null; primarySelected = true;
+  steps = [{ n: 1, label: 'Datos' }, { n: 2, label: 'Firmas' }, { n: 3, label: 'Revisión' }];
+  step = 1; activeSigner: number | null = null;
   revision: string | null = null; savedAt = ''; draftUnavailable = false;
   reservation: Reservation | null = null;
   input: OfficialCardInput = { marketingConsent: false, signatureAuthorizationAccepted: false, occupants: [] };
   loading = true; working = false; previewReady = false; confirmSend = false;
   message = ''; isError = false;
-  operaGiven = ''; operaSurname = ''; operaWorking = false; confirmOpera = false;
-  lookup: any = null; guestPreview: any = null; operaProfileId = '';
   previewBlob: Blob | null = null; previewUrl: SafeResourceUrl | null = null;
   private previewObjectUrl: string | null = null;
-  // Se conserva el código de edición para reactivarlo únicamente si Operación lo aprueba.
-  readonly allowCompanionEditing = false;
 
   ngOnInit() {
     this.confirmation = this.route.snapshot.params['confirmation'];
@@ -43,14 +100,6 @@ export class TarjetaComponent implements OnInit, OnDestroy {
           this.input.primarySignerId = r.guest.id;
           this.input.email = r.guest.email; this.input.cellPhone = r.guest.phoneNumber;
           this.input.city = r.guest.address?.city; this.input.state = r.guest.address?.stateProvCode; this.input.country = r.guest.address?.countryCode;
-          for (const g of (r.accompanyingGuests || []).slice(0, 8))
-            this.input.occupants.push({ name: g.fullName, signerId: g.profileId ?? g.reservationGuestId, signaturePngBase64: '', selected: true, clientId: crypto.randomUUID() });
-          if (!this.input.occupants.length)
-            for (const n of (r.accompanyingGuestNames || []).slice(0, 8))
-              this.input.occupants.push({ name: n, signaturePngBase64: '', selected: true });
-          const expected = Math.min(8, Math.max(0, r.roomStay.adultCount - 1));
-          while (this.input.occupants.length < expected)
-            this.input.occupants.push({ name: '', signaturePngBase64: '', selected: true });
         }
         if (draft.input) this.input = draft.input;
         this.input.signatureAuthorizationAccepted ??= false;
@@ -66,15 +115,7 @@ export class TarjetaComponent implements OnInit, OnDestroy {
   ngOnDestroy() { this.clearPreview(); }
 
   private syncOccupantsFromOpera(reservation: Reservation) {
-    const existing = this.input.occupants || [];
-    const opera = (reservation.accompanyingGuests || []).map(g => ({ name: g.fullName, signerId: g.profileId ?? g.reservationGuestId }))
-      .concat((reservation.accompanyingGuestNames || []).map(name => ({ name, signerId: undefined })))
-      .filter((g, index, all) => !!g.name?.trim() && all.findIndex(x => (x.signerId && x.signerId === g.signerId) || (!x.signerId && x.name.trim().toUpperCase() === g.name.trim().toUpperCase())) === index)
-      .slice(0, 8);
-    this.input.occupants = opera.map(g => {
-      const saved = existing.find(x => (g.signerId && x.signerId === g.signerId) || x.name.trim().toUpperCase() === g.name.trim().toUpperCase());
-      return { clientId: saved?.clientId || crypto.randomUUID(), signerId: g.signerId, name: g.name, signaturePngBase64: saved?.signaturePngBase64 || '', selected: true };
-    });
+    this.input.occupants = reconcileOccupants(reservation, this.input.occupants || []);
   }
 
   get totalSigners() { return this.input.occupants.length + 1; }
@@ -82,22 +123,11 @@ export class TarjetaComponent implements OnInit, OnDestroy {
   get currentSigner() { return this.activeSigner === -1 ? this.input.primaryGuestName : this.input.occupants[this.activeSigner ?? -1]?.name; }
   invalidatePreview() { this.previewReady = false; this.confirmSend = false; this.clearPreview(); }
 
-  addOccupant() {
-    if (this.input.occupants.length < 8) {
-      this.input.occupants.push({ clientId: crypto.randomUUID(), name: '', signaturePngBase64: '', selected: true });
-      this.invalidatePreview();
-    }
-  }
-  canRemove(i: number) { return !this.input.occupants.slice(i).some(o => !!o.signaturePngBase64); }
-  removeOccupant(i: number) { if (this.canRemove(i)) { this.input.occupants.splice(i, 1); this.invalidatePreview(); } }
   startSignatures() {
-    if (this.input.occupants.some(o => o.selected && !o.name.trim())) {
-      this.setMsg('Capture el nombre de los firmantes seleccionados o quite su selección.', true); return;
-    }
-    this.step = 3; this.activeSigner = null; this.invalidatePreview(); this.msg('');
+    this.step = 2; this.activeSigner = null; this.invalidatePreview(); this.msg('');
   }
   selectSigner(i: number) {
-    if (this.working || (i === -1 ? !!this.input.primarySignaturePngBase64 || !this.primarySelected : !this.input.occupants[i]?.selected || !!this.input.occupants[i]?.signaturePngBase64)) return;
+    if (this.working || (i === -1 ? !!this.input.primarySignaturePngBase64 : !!this.input.occupants[i]?.signaturePngBase64)) return;
     this.pad?.clear(); this.activeSigner = i;
   }
   capture() {
@@ -152,56 +182,15 @@ export class TarjetaComponent implements OnInit, OnDestroy {
     this.persist().then(() => this.api.uploadOfficialCard(this.confirmation, this.input)).then(
       r => {
         const mail = r.emailStatus === 'Pending' ? ' El correo quedó en cola para envío SMTP.' : r.emailStatus === 'SkippedNoEmail' ? ' No se encoló correo: sin destinatario válido.' : r.emailStatus === 'QueueFailed' ? ' No fue posible encolar el correo.' : '';
-        this.setMsg(`Documento enviado a OPERA. Attachment ID: ${r.attachmentId}.${mail}`, r.emailStatus === 'QueueFailed');
+        const opera = r.attachmentOutcome === 'Replaced'
+          ? `La versión ${r.localDocumentVersion} reemplazó el adjunto existente en OPERA.`
+          : r.attachmentOutcome === 'SkippedExisting'
+            ? `OPERA ya contenía ${r.fileName}; la política ${r.attachmentPolicy} conservó el adjunto existente y no subió esta versión.`
+            : `Versión ${r.localDocumentVersion} enviada a OPERA como ${r.fileName}.`;
+        this.setMsg(`${opera} Attachment ID: ${r.attachmentId}.${mail}`, r.emailStatus === 'QueueFailed');
         this.confirmSend = false; this.working = false;
       },
       e => { this.setMsg(typeof e?.error === 'string' ? e.error : e.message, true); this.working = false; }
-    );
-  }
-  lookupGuest() {
-    if (!this.operaGiven.trim() || !this.operaSurname.trim()) { this.setMsg('Capture nombre y apellido del acompañante.', true); return; }
-    this.operaWorking = true; this.lookup = null; this.guestPreview = null; this.confirmOpera = false;
-    this.api.lookupAccompanyingAdult(this.confirmation, this.operaGiven, this.operaSurname).then(
-      l => { this.lookup = l; this.operaWorking = false; },
-      e => { this.setMsg(e?.error?.message || e.message, true); this.operaWorking = false; }
-    );
-  }
-  previewGuest(pid: string) {
-    this.operaProfileId = pid; this.guestPreview = null; this.confirmOpera = false; this.operaWorking = true;
-    this.api.previewAddAccompanyingAdult(this.confirmation, pid).then(
-      p => { this.guestPreview = p; this.operaWorking = false; },
-      e => { this.setMsg(e?.error?.message || e.message, true); this.operaWorking = false; }
-    );
-  }
-  applyGuest() {
-    if (!this.guestPreview?.canApply || !this.confirmOpera) return;
-    this.operaWorking = true;
-    this.api.addAccompanyingAdult(this.confirmation, this.operaProfileId, this.guestPreview.lastModifyDateTime, 'AGREGAR ACOMPAÑANTE').then(
-      r => {
-        const g = r.after.requestedProfile;
-        if (!this.input.occupants.some(o => o.signerId === g.profileId))
-          this.input.occupants.push({ name: g.fullName, signerId: g.profileId, signaturePngBase64: '', selected: true });
-        if (this.reservation) this.reservation.roomStay.adultCount = r.after.currentAdults;
-        this.guestPreview = null; this.confirmOpera = false; this.operaWorking = false;
-        this.setMsg(`${g.fullName} fue agregado y verificado en OPERA. Ya puede firmar.`, false);
-      },
-      e => { this.setMsg(e?.error?.message || e.message, true); this.operaWorking = false; }
-    );
-  }
-  createGuest() {
-    const pv = this.lookup?.newProfilePreview;
-    if (!pv?.canApply || !this.confirmOpera) return;
-    this.operaWorking = true;
-    this.api.createAndAddAccompanyingAdult(this.confirmation, this.operaGiven, this.operaSurname, pv.lastModifyDateTime, 'AGREGAR ACOMPAÑANTE').then(
-      r => {
-        const g = r.after.requestedProfile;
-        if (!this.input.occupants.some(o => o.signerId === g.profileId))
-          this.input.occupants.push({ name: g.fullName, signerId: g.profileId, signaturePngBase64: '', selected: true });
-        if (this.reservation) this.reservation.roomStay.adultCount = r.after.currentAdults;
-        this.lookup = null; this.operaGiven = ''; this.operaSurname = ''; this.confirmOpera = false; this.operaWorking = false;
-        this.setMsg(`Profile ID ${g.profileId} creado para ${g.fullName} y vinculado en OPERA.`, false);
-      },
-      e => { this.setMsg(e?.error?.message || e.message, true); this.operaWorking = false; }
     );
   }
   dash(v?: string) { return v?.trim() ? v : '—'; }
