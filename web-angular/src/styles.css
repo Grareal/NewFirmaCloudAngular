@@ -186,7 +186,7 @@ textarea {
   background: #fff;
   border-color: rgb(255 255 255 / 18%);
   box-shadow: 0 8px 22px rgb(0 25 70 / 20%);
-  font-weight: 700;
+  font-weight: 700px;
 }
 
 .sidebar .nav-link.active::before {
@@ -234,7 +234,7 @@ textarea {
 
 main {
   min-width: 0;
-  flex: 1;
+  flex:1;
 }
 
 .content {
