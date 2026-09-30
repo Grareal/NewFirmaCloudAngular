@@ -9,7 +9,7 @@ import { OcrParseResult } from '../../core/models';
   template: `
   <div class="d-flex justify-content-between align-items-start mb-3">
     <div><h3>Captura guiada de identidad <span class="badge bg-warning text-dark">POC local</span></h3>
-    <p class="text-muted mb-0">Tesseract on-prem. No consulta ni escribe OPERA. Revisión humana obligatoria.</p></div>
+    <p class="text-muted mb-0">En teoria tesseract onpremise . La Revisión humana sigue siendo obligatoria.</p></div>
   </div>
   @if (message) { <div class="alert" [class.alert-danger]="isError" [class.alert-success]="!isError">{{ message }}</div> }
   <div class="row g-3">
@@ -18,8 +18,8 @@ import { OcrParseResult } from '../../core/models';
         <h5>1. Guía de captura</h5>
         <ul class="small mb-2">
           <li>Buena luz difusa, <strong>sin flash directo</strong> (evita brillo en la mica).</li>
-          <li>INE completa dentro del marco, sin recortar bordes ni vigencia.</li>
-          <li>Fondo oscuro y plano, credencial sin mica protectora si es posible.</li>
+          <li>INE completa dentro del marco respetando los valores predefinidos.</li>
+          <li>Fondo oscuro y plano, mica protectora no disponible.</li>
           <li>Enfocar y mantener el teléfono quieto 1 segundo.</li>
         </ul>
         <div class="form-check"><input class="form-check-input" type="checkbox" [(ngModel)]="guiaOk" id="guiaOk"><label class="form-check-label" for="guiaOk">Verifiqué luz, encuadre y enfoque</label></div>
@@ -30,8 +30,22 @@ import { OcrParseResult } from '../../core/models';
           <div class="col-6"><label class="form-label">Confirmación</label><input class="form-control" [(ngModel)]="confirmation"></div>
           <div class="col-3"><label class="form-label">Hotel</label><input class="form-control" [(ngModel)]="hotelId"></div>
           <div class="col-3"><label class="form-label">Hab.</label><input class="form-control" [(ngModel)]="room"></div>
-          <div class="col-12"><label class="form-label">Documento</label><select class="form-select" [(ngModel)]="docType"><option value="Auto">Detección automática</option><option value="INE">INE</option><option value="Pasaporte">Pasaporte</option><option value="Licencia">Licencia de conducir</option><option value="Residencia">Tarjeta de residencia</option><option value="Visa">Visa</option></select></div>
-        </div>
+        <div class="col-12"><label class="form-label">Motor OCR para la identificación de documentos</label>
+  <select class="form-select" [(ngModel)]="ocrEngine">
+    <option value="1">Tesseract</option>
+    <option value="2">IronOCR</option>
+    <option value="3">Leadtools</option>
+  </select>
+</div>
+
+          <div class="col-12">
+    <label class="form-label">
+        Motor OCR para la identificacion de los documentos a seleccionar ; Tesseract, iron ocr y leadtools : Verificacion manual de cada procesador 
+    </label>
+ 
+</div>
+
+          </div>
       </div></div>
     </div>
     <div class="col-lg-8">
@@ -78,12 +92,27 @@ import { OcrParseResult } from '../../core/models';
 })
 export class CapturaIdentidadComponent {
   private api = inject(ApiService);
-  confirmation = ''; hotelId = 'VINV'; room = ''; docType = 'Auto';
-  guiaOk = false; reviewOk = false; retentionOk = false; working = false; isError = false; message = '';
-  front: File | null = null; back: File | null = null;
-  frontUrl: string | null = null; backUrl: string | null = null;
+
+  ocrEngine: number = 1;
+  confirmation = '';
+  hotelId = 'VINV';
+  room = '';
+  docType = 'Auto';
+  guiaOk = false;
+  reviewOk = false;
+  retentionOk = false;
+  working = false;
+  isError = false;
+  message = '';
+  front: File | null = null;
+  back: File | null = null;
+  frontUrl: string | null = null;
+  backUrl: string | null = null;
   parse: OcrParseResult | null = null;
-  pdfBlob: Blob | null = null; pdfName = ''; pdfHash = '';
+  pdfBlob: Blob | null = null;
+  pdfName = '';
+  pdfHash = '';
+
 
   load(e: Event, front: boolean) {
     const f = (e.target as HTMLInputElement).files?.[0] || null;
@@ -98,7 +127,7 @@ export class CapturaIdentidadComponent {
   analyze() {
     if (!this.front) return;
     this.working = true; this.message = '';
-    this.api.parseIdentity(this.front, this.back, this.docType).then(
+    this.api.parseIdentity(this.front, this.back, this.docType,this.ocrEngine).then(
       r => { this.parse = r; this.show(r.warnings.length ? 'OCR listo con advertencias: revise los campos.' : 'OCR listo. Verifique los campos antes de generar el PDF.', false); this.working = false; },
       e => { this.show('No se analizó: ' + (e?.error?.message || e.message), true); this.working = false; }
     );

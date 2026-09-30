@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 
+
+
 //ORC para el funcionamiento del lector de identificaciones acorde al
 //pasaporte y demas
 
@@ -18,12 +20,14 @@ namespace FirmaOperaCloud.Api.Controllers;
 
 [ApiController, Authorize(Policy = "Ocr.Use"), Route("api/ocr")]
 public sealed class OcrController(
-    IOcrService ocr,
+IOcrProviderFactory ocrFactory,
     IdentityEvidencePdfService pdfService,
     ReservationFileService reservationFiles,
     IAuditService audit,
     IConfiguration configuration,
+    LeadtoolsPassportReader passportReader,
     FirmaOperaCloudDbContext db) : ControllerBase
+    
 {
     private const long MaxBytes = 10_000_000;
 
@@ -34,14 +38,14 @@ public sealed class OcrController(
         IFormFile? back,
         [FromForm] string documentType = "Auto",
         [FromForm] string language = "spa+eng",
+        [FromForm] OcrEngineType engine = OcrEngineType.Tesseract,
         CancellationToken ct = default)
     {
         var frontBytes = await ReadValidatedImageAsync(front, ct);
         var backBytes = back is null ? null : await ReadValidatedImageAsync(back, ct);
-        var frontResult = await ocr.RecognizeAsync(frontBytes, language, ct);
-        var backResult = backBytes is null
-            ? null
-            : await ocr.RecognizeAsync(backBytes, language, ct);
+        var selectedOcr = ocrFactory.GetEngine(engine);
+        var frontResult =await selectedOcr.RecognizeAsync(frontBytes,language,ct);
+        var backResult =backBytes is null? null: await selectedOcr.RecognizeAsync(backBytes,language,ct);
         var fields = IdentityDocumentParser.Parse(frontResult.Text, backResult?.Text, documentType);
 
         await audit.AppendAsync(AuditRequest.Create(HttpContext, "Ocr.Parsed", "IdentityDocument",
@@ -55,6 +59,7 @@ public sealed class OcrController(
 
         return Ok(new
         {
+            engine = engine.ToString(),
             docType = fields.DocType,
             frontConfidence = frontResult.MeanConfidence,
             backConfidence = backResult?.MeanConfidence,
@@ -71,6 +76,23 @@ public sealed class OcrController(
             humanReviewRequired = true
         });
     }
+
+    [HttpPost("passport-debug")]
+    public async Task<IActionResult> PassportDebug(
+        IFormFile front,
+        CancellationToken ct)
+    {
+        var bytes =
+            await ReadValidatedImageAsync(
+                front,
+                ct);
+
+        var result =
+            passportReader.Read(bytes);
+
+        return Ok(result);
+    }
+
 
     [HttpPost("identity-pdf")]
     [RequestSizeLimit(MaxBytes * 2)]
@@ -111,10 +133,11 @@ public sealed class OcrController(
 
         var frontBytes = await ReadValidatedImageAsync(front, ct);
         var backBytes = back is null ? null : await ReadValidatedImageAsync(back, ct);
-        var frontResult = await ocr.RecognizeAsync(frontBytes, language, ct);
-        var backResult = backBytes is null
-            ? null
-            : await ocr.RecognizeAsync(backBytes, language, ct);
+
+        var selectedOcr = ocrFactory.GetEngine(OcrEngineType.Tesseract);
+
+        var frontResult = await selectedOcr.RecognizeAsync(frontBytes,language,ct);
+        var backResult = backBytes is null? null: await selectedOcr.RecognizeAsync( backBytes,language,ct);
         var parsed = IdentityDocumentParser.Parse(frontResult.Text, backResult?.Text, documentType);
         var fields = ApplyHumanReview(parsed, reviewed);
         var validationError = ValidateReviewed(fields);

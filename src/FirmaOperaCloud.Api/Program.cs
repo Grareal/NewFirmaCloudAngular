@@ -147,7 +147,17 @@ builder.Services.AddScoped<LocalDocumentService>();
 builder.Services.AddScoped<ReservationFileService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IdentityEvidencePdfService>();
-builder.Services.AddScoped<IOcrService, TesseractOcrService>();
+//SERVICIOS DE OCR DEPENDIENDO CUAL NOS QUEDEMOS AL FINAL 
+builder.Services.AddScoped<TesseractOcrService>();
+builder.Services.AddScoped<IronOcrService>();
+builder.Services.AddScoped<LeadtoolsOcrService>();
+builder.Services.AddScoped<IOcrProviderFactory,
+    OcrProviderFactory>();
+
+builder.Services.AddSingleton<
+    LeadtoolsPassportReader>();
+
+
 builder.Services.AddScoped<PdfTemplateRenderService>();
 builder.Services.AddScoped<GuestEmailQueueService>();
 builder.Services.AddSingleton<IGuestEmailSender, SmtpEmailSender>();

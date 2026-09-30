@@ -118,11 +118,11 @@ export class ApiService {
     return firstValueFrom(id ? this.http.put(`${B}/admin/access/users/${id}`, input) : this.http.post(`${B}/admin/access/users`, input));
   }
 
-  parseIdentity(front: File, back: File | null, documentType: string) {
+  parseIdentity(front: File,back: File | null,docType: string,engine: number) {
     const f = new FormData();
     f.append('front', front, front.name);
     if (back) f.append('back', back, back.name);
-    f.append('documentType', documentType);
+    f.append('documentType', docType);f.append('engine',engine.toString());
     return firstValueFrom(this.http.post<OcrParseResult>(`${B}/ocr/parse`, f));
   }
   createIdentityPdf(confirmation: string, hotelId: string, room: string, front: File, back: File | null, documentType: string, reviewedFields: unknown) {
