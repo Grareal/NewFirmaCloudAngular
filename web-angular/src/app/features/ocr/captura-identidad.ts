@@ -9,7 +9,7 @@ import { OcrParseResult } from '../../core/models';
   template: `
   <div class="d-flex justify-content-between align-items-start mb-3">
     <div><h3>Captura guiada de identidad <span class="badge bg-warning text-dark">POC local</span></h3>
-    <p class="text-muted mb-0">En teoria tesseract onpremise . La Revisión humana sigue siendo obligatoria.</p></div>
+    <p class="text-muted mb-0">Compara motores OCR locales. La revisión humana sigue siendo obligatoria.</p></div>
   </div>
   @if (message) { <div class="alert" [class.alert-danger]="isError" [class.alert-success]="!isError">{{ message }}</div> }
   <div class="row g-3">
@@ -30,21 +30,13 @@ import { OcrParseResult } from '../../core/models';
           <div class="col-6"><label class="form-label">Confirmación</label><input class="form-control" [(ngModel)]="confirmation"></div>
           <div class="col-3"><label class="form-label">Hotel</label><input class="form-control" [(ngModel)]="hotelId"></div>
           <div class="col-3"><label class="form-label">Hab.</label><input class="form-control" [(ngModel)]="room"></div>
-        <div class="col-12"><label class="form-label">Motor OCR para la identificación de documentos</label>
+        <div class="col-12"><label class="form-label">Motor OCR</label>
   <select class="form-select" [(ngModel)]="ocrEngine">
-    <option value="1">Tesseract</option>
-    <option value="2">IronOCR</option>
-    <option value="3">Leadtools</option>
+    <option [ngValue]="1">Tesseract</option>
+    <option [ngValue]="2">IronOCR</option>
+    <option [ngValue]="3">LEADTOOLS</option>
   </select>
 </div>
-
-          <div class="col-12">
-    <label class="form-label">
-        Motor OCR para la identificacion de los documentos a seleccionar ; Tesseract, iron ocr y leadtools : Verificacion manual de cada procesador 
-    </label>
- 
-</div>
-
           </div>
       </div></div>
     </div>
@@ -135,7 +127,7 @@ export class CapturaIdentidadComponent {
   generate() {
     if (!this.front || !this.parse || !this.reviewOk || !this.retentionOk) return;
     this.working = true; this.message = '';
-    this.api.createIdentityPdf(this.confirmation.trim(), this.hotelId.trim().toUpperCase(), this.room.trim(), this.front, this.back, this.docType, this.parse.fields).then(
+    this.api.createIdentityPdf(this.confirmation.trim(), this.hotelId.trim().toUpperCase(), this.room.trim(), this.front, this.back, this.docType, this.ocrEngine, this.parse.fields).then(
       resp => {
         this.pdfBlob = resp.body;
         this.pdfHash = resp.headers.get('X-Document-Hash') || '';

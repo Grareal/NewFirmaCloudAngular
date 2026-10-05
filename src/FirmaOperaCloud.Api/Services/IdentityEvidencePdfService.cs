@@ -4,7 +4,7 @@ using PdfSharp.Pdf;
 
 namespace FirmaOperaCloud.Api.Services;
 
-/// <summary>POC: arma un PDF local de evidencia INE/pasaporte. NO sube a OPERA.</summary>
+/// <summary>Arma un PDF local de evidencia de identidad. No lo sube a OPERA.</summary>
 public sealed class IdentityEvidencePdfService
 {
     public byte[] Build(
@@ -12,11 +12,11 @@ public sealed class IdentityEvidencePdfService
         string? capturedBy, Guid evidenceId, DateTime capturedAtUtc,
         byte[]? frontImage, byte[]? backImage,
         IdentityFields fields, string frontText, string? backText,
-        float frontConfidence, float backConfidence)
+        float frontConfidence, float backConfidence, string ocrEngine)
     {
         using var doc = new PdfDocument();
         doc.Info.Title = $"Evidencia identidad {confirmationNumber}";
-        doc.Info.Creator = "FirmaOperaCloud OCR POC (Tesseract on-prem)";
+        doc.Info.Creator = $"FirmaOperaCloud OCR ({ocrEngine})";
         doc.Info.Subject = evidenceId.ToString();
 
         var page = doc.AddPage();
@@ -33,7 +33,7 @@ public sealed class IdentityEvidencePdfService
         y += 22;
         gfx.DrawString($"Hotel {hotelId} · Reserva {confirmationNumber} · Hab {(string.IsNullOrWhiteSpace(roomNumber) ? "—" : roomNumber)}", body, XBrushes.Black, L, y); y += 14;
         gfx.DrawString($"GUID {evidenceId} · Capturado {capturedAtUtc:yyyy-MM-dd HH:mm} UTC por {(string.IsNullOrWhiteSpace(capturedBy) ? "—" : capturedBy)}", small, XBrushes.Black, L, y); y += 14;
-        gfx.DrawString("POC on-prem Tesseract. Requiere revisión humana antes de cualquier uso operativo.", small, XBrushes.DarkRed, L, y); y += 18;
+        gfx.DrawString($"OCR local con {ocrEngine}. Requiere revisión humana antes de cualquier uso operativo.", small, XBrushes.DarkRed, L, y); y += 18;
 
         gfx.DrawString($"Documento: {fields.DocType ?? "—"}   Conf. frente {frontConfidence:P0}   Conf. reverso {backConfidence:P0}", h2, XBrushes.Black, L, y); y += 16;
         foreach (var line in FieldLines(fields))

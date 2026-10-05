@@ -1,6 +1,6 @@
 namespace FirmaOperaCloud.Application.Contracts;
 
-/// <summary>POC OCR on-prem (Tesseract) para INE / pasaporte. Sin nube, sin OPERA.</summary>
+/// <summary>Resultado normalizado de cualquier proveedor OCR.</summary>
 public sealed record OcrReadResult(string Text, float MeanConfidence, string Language);
 
 public interface IOcrService

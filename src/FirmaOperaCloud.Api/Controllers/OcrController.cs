@@ -9,25 +9,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-
-
-
-//ORC para el funcionamiento del lector de identificaciones acorde al
-//pasaporte y demas
-
-
 namespace FirmaOperaCloud.Api.Controllers;
 
 [ApiController, Authorize(Policy = "Ocr.Use"), Route("api/ocr")]
 public sealed class OcrController(
-IOcrProviderFactory ocrFactory,
+    OcrProvider ocrProvider,
     IdentityEvidencePdfService pdfService,
     ReservationFileService reservationFiles,
     IAuditService audit,
     IConfiguration configuration,
-    LeadtoolsPassportReader passportReader,
     FirmaOperaCloudDbContext db) : ControllerBase
-    
 {
     private const long MaxBytes = 10_000_000;
 
@@ -43,9 +34,20 @@ IOcrProviderFactory ocrFactory,
     {
         var frontBytes = await ReadValidatedImageAsync(front, ct);
         var backBytes = back is null ? null : await ReadValidatedImageAsync(back, ct);
-        var selectedOcr = ocrFactory.GetEngine(engine);
-        var frontResult =await selectedOcr.RecognizeAsync(frontBytes,language,ct);
-        var backResult =backBytes is null? null: await selectedOcr.RecognizeAsync(backBytes,language,ct);
+        var selectedOcr = ocrProvider.Get(engine);
+        OcrReadResult frontResult;
+        OcrReadResult? backResult;
+        try
+        {
+            frontResult = await selectedOcr.RecognizeAsync(frontBytes, language, ct);
+            backResult = backBytes is null
+                ? null
+                : await selectedOcr.RecognizeAsync(backBytes, language, ct);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or FileNotFoundException)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = ex.Message });
+        }
         var fields = IdentityDocumentParser.Parse(frontResult.Text, backResult?.Text, documentType);
 
         await audit.AppendAsync(AuditRequest.Create(HttpContext, "Ocr.Parsed", "IdentityDocument",
@@ -77,23 +79,6 @@ IOcrProviderFactory ocrFactory,
         });
     }
 
-    [HttpPost("passport-debug")]
-    public async Task<IActionResult> PassportDebug(
-        IFormFile front,
-        CancellationToken ct)
-    {
-        var bytes =
-            await ReadValidatedImageAsync(
-                front,
-                ct);
-
-        var result =
-            passportReader.Read(bytes);
-
-        return Ok(result);
-    }
-
-
     [HttpPost("identity-pdf")]
     [RequestSizeLimit(MaxBytes * 2)]
     public async Task<IActionResult> IdentityPdf(
@@ -107,6 +92,7 @@ IOcrProviderFactory ocrFactory,
         [FromForm] bool reviewConfirmed,
         [FromForm] bool retentionAccepted,
         [FromForm] string language = "spa+eng",
+        [FromForm] OcrEngineType engine = OcrEngineType.Tesseract,
         CancellationToken ct = default)
     {
         if (!reviewConfirmed || !retentionAccepted)
@@ -134,10 +120,21 @@ IOcrProviderFactory ocrFactory,
         var frontBytes = await ReadValidatedImageAsync(front, ct);
         var backBytes = back is null ? null : await ReadValidatedImageAsync(back, ct);
 
-        var selectedOcr = ocrFactory.GetEngine(OcrEngineType.Tesseract);
+        var selectedOcr = ocrProvider.Get(engine);
 
-        var frontResult = await selectedOcr.RecognizeAsync(frontBytes,language,ct);
-        var backResult = backBytes is null? null: await selectedOcr.RecognizeAsync( backBytes,language,ct);
+        OcrReadResult frontResult;
+        OcrReadResult? backResult;
+        try
+        {
+            frontResult = await selectedOcr.RecognizeAsync(frontBytes, language, ct);
+            backResult = backBytes is null
+                ? null
+                : await selectedOcr.RecognizeAsync(backBytes, language, ct);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or FileNotFoundException)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = ex.Message });
+        }
         var parsed = IdentityDocumentParser.Parse(frontResult.Text, backResult?.Text, documentType);
         var fields = ApplyHumanReview(parsed, reviewed);
         var validationError = ValidateReviewed(fields);
@@ -148,7 +145,7 @@ IOcrProviderFactory ocrFactory,
         var user = User.FindFirst("username")?.Value ?? User.Identity?.Name ?? "unknown";
         var pdf = pdfService.Build(hotelId, confirmation, roomNumber, user, evidenceId, now,
             frontBytes, backBytes, fields, frontResult.Text, backResult?.Text,
-            frontResult.MeanConfidence, backResult?.MeanConfidence ?? 0);
+            frontResult.MeanConfidence, backResult?.MeanConfidence ?? 0, engine.ToString());
         var version = (await db.LocalDocuments
             .Where(x => x.HotelId == hotelId && x.ConfirmationNumber == confirmation)
             .MaxAsync(x => (int?)x.Version, ct) ?? 0) + 1;

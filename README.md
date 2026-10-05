@@ -17,6 +17,11 @@ una configuración de proxy que apunte expresamente a ese ambiente.
 
 ## Documentación para cambios
 
+La configuración de Tesseract, IronOCR y LEADTOOLS está en
+[`docs/OCR_CONFIGURACION.md`](docs/OCR_CONFIGURACION.md). La revisión técnica y el
+orden sugerido de simplificación están en
+[`docs/REVISION_MANTENIBILIDAD.md`](docs/REVISION_MANTENIBILIDAD.md).
+
 Consulte [`docs/GUIA_ARQUITECTURA_Y_CAMBIOS.md`](docs/GUIA_ARQUITECTURA_Y_CAMBIOS.md)
 para entender la función de cada proyecto, el flujo OpenAPI y qué archivos deben
 modificarse al cambiar pantallas, menús, rutas, campos, permisos, PDF u OPERA.

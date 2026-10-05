@@ -125,13 +125,14 @@ export class ApiService {
     f.append('documentType', docType);f.append('engine',engine.toString());
     return firstValueFrom(this.http.post<OcrParseResult>(`${B}/ocr/parse`, f));
   }
-  createIdentityPdf(confirmation: string, hotelId: string, room: string, front: File, back: File | null, documentType: string, reviewedFields: unknown) {
+  createIdentityPdf(confirmation: string, hotelId: string, room: string, front: File, back: File | null, documentType: string, engine: number, reviewedFields: unknown) {
     const f = new FormData();
     f.append('confirmationNumber', confirmation); f.append('hotelId', hotelId);
     if (room) f.append('roomNumber', room);
     f.append('front', front, front.name);
     if (back) f.append('back', back, back.name);
     f.append('documentType', documentType);
+    f.append('engine', engine.toString());
     f.append('reviewedFieldsJson', JSON.stringify(reviewedFields));
     f.append('reviewConfirmed', 'true');
     f.append('retentionAccepted', 'true');

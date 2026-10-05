@@ -34,6 +34,12 @@ services:
       OperaCloud__DefaultHotelId: ${OperaCloud__DefaultHotelId:-VINV}
       OperaCloud__RegistrationCardAttachmentPolicy: ${OperaCloud__RegistrationCardAttachmentPolicy:-KeepAllVersions}
       DATA_PROTECTION_KEYS_PATH: /keys
+      IronOcr__LicenseKey: ${IronOcr__LicenseKey:-}
+      Leadtools__LicenseFile: ${Leadtools__LicenseFile:-}
+      Leadtools__DeveloperKey: ${Leadtools__DeveloperKey:-}
+      Leadtools__DeveloperKeyFile: ${Leadtools__DeveloperKeyFile:-}
+      Leadtools__OcrRuntimePath: ${Leadtools__OcrRuntimePath:-}
+      Leadtools__NativeLibraryPath: ${Leadtools__NativeLibraryPath:-}
 
     # Volumen persistente para conservar llaves criptográficas
     # entre reinicios del contenedor
