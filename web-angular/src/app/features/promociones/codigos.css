@@ -1,0 +1,23 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.promotion-code-cell {
+  min-width: 11.25rem;
+  max-width: 21.875rem;
+  overflow-wrap: anywhere;
+}
+
+.promotion-description-cell {
+  min-width: 16.25rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 575.98px) {
+  .promotion-code-cell,
+  .promotion-description-cell {
+    min-width: 0;
+  }
+}

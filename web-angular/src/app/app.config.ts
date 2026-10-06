@@ -10,5 +10,5 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     // ASP.NET requires its RequestToken, not the antiforgery cookie value.
     provideHttpClient(withNoXsrfProtection(), withInterceptors([authInterceptor])),
-  ]
+  ],
 };

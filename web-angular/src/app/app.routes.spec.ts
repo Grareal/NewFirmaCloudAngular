@@ -11,40 +11,49 @@ class RouteProbe {}
 
 // Exercise the real URL patterns, ordering, redirects and guard without
 // instantiating operational screens that would request backend data.
-const routingOnly: Routes = routes.map(route => {
+const routingOnly: Routes = routes.map((route) => {
   const { loadComponent, ...config } = route;
   return loadComponent ? { ...config, component: RouteProbe } : config;
 });
 
 describe('Application route recognition', () => {
-  let auth: { authenticated: boolean; role: string; ensureSession: () => Observable<boolean>; hasPermission: () => boolean };
+  let auth: {
+    authenticated: boolean;
+    role: string;
+    ensureSession: () => Observable<boolean>;
+    hasPermission: () => boolean;
+  };
   let failures: NavigationError[];
 
   beforeEach(() => {
     auth = {
-      authenticated: true, role: 'Admin',
+      authenticated: true,
+      role: 'Admin',
       ensureSession: () => of(auth.authenticated),
-      hasPermission: () => false
+      hasPermission: () => false,
     };
     failures = [];
-    TestBed.configureTestingModule({ providers: [
-      provideRouter(routingOnly), { provide: AuthService, useValue: auth }
-    ] });
-    TestBed.inject(Router).events.subscribe(event => {
+    TestBed.configureTestingModule({
+      providers: [provideRouter(routingOnly), { provide: AuthService, useValue: auth }],
+    });
+    TestBed.inject(Router).events.subscribe((event) => {
       if (event instanceof NavigationError) failures.push(event);
     });
   });
 
-  const urls = routes.filter(route => route.path !== '**').map(route =>
-    '/' + route.path!.replace(':confirmation', '123456789')
-  );
+  const urls = routes
+    .filter((route) => route.path !== '**')
+    .map((route) => '/' + route.path!.replace(':confirmation', '123456789'));
 
-  it.each(urls)('recognizes %s without a navigation error', async url => {
+  it.each(urls)('recognizes %s without a navigation error', async (url) => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(url, RouteProbe);
-    const expectedUrl = url === '/udf'
-      ? '/codigos-promocion'
-      : ['/busqueda', '/acompanantes-opera'].includes(url) ? '/operacion' : url;
+    const expectedUrl =
+      url === '/udf'
+        ? '/codigos-promocion'
+        : ['/busqueda', '/acompanantes-opera'].includes(url)
+          ? '/operacion'
+          : url;
     expect(TestBed.inject(Router).url).toBe(expectedUrl);
     expect(failures).toEqual([]);
   });

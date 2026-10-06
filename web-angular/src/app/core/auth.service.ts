@@ -1,6 +1,17 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { catchError, finalize, map, Observable, of, shareReplay, switchMap, tap, throwError, timeout } from 'rxjs';
+import {
+  catchError,
+  finalize,
+  map,
+  Observable,
+  of,
+  shareReplay,
+  switchMap,
+  tap,
+  throwError,
+  timeout,
+} from 'rxjs';
 import { AuthSession } from './models';
 
 @Injectable({ providedIn: 'root' })
@@ -17,8 +28,12 @@ export class AuthService {
   permissions: string[] = [];
   csrfToken = '';
 
-  get isAuthenticated() { return !!this.username; }
-  hasPermission(permission: string) { return this.permissions.includes(permission); }
+  get isAuthenticated() {
+    return !!this.username;
+  }
+  hasPermission(permission: string) {
+    return this.permissions.includes(permission);
+  }
 
   ensureSession(): Observable<boolean> {
     if (this.initialized) return of(this.isAuthenticated);
@@ -26,19 +41,20 @@ export class AuthService {
     this.sessionError = '';
     this.sessionRequest = this.http.get<AuthSession>('/api/auth/session').pipe(
       timeout(15000),
-      switchMap(session => this.refreshCsrf().pipe(map(() => session))),
-      tap(session => this.setSession(session)),
+      switchMap((session) => this.refreshCsrf().pipe(map(() => session))),
+      tap((session) => this.setSession(session)),
       map(() => true),
-      catchError(error => {
+      catchError((error) => {
         this.clear();
         if (error?.status !== 401) {
           this.initialized = false;
-          this.sessionError = 'No se pudo comprobar la sesión. Verifica la conexión con el servidor e intenta nuevamente.';
+          this.sessionError =
+            'No se pudo comprobar la sesión. Verifica la conexión con el servidor e intenta nuevamente.';
         }
         return of(false);
       }),
-      finalize(() => this.sessionRequest = undefined),
-      shareReplay({ bufferSize: 1, refCount: true })
+      finalize(() => (this.sessionRequest = undefined)),
+      shareReplay({ bufferSize: 1, refCount: true }),
     );
     return this.sessionRequest;
   }
@@ -46,18 +62,20 @@ export class AuthService {
   login(username: string, password: string) {
     this.sessionError = '';
     return this.refreshCsrf().pipe(
-      switchMap(() => this.http.post<AuthSession>('/api/auth/login', { username, password }).pipe(timeout(15000))),
+      switchMap(() =>
+        this.http.post<AuthSession>('/api/auth/login', { username, password }).pipe(timeout(15000)),
+      ),
       // The identity changed: the anonymous RequestToken is no longer valid.
-      switchMap(session => this.refreshCsrf().pipe(map(() => session))),
-      tap(session => this.setSession(session))
+      switchMap((session) => this.refreshCsrf().pipe(map(() => session))),
+      tap((session) => this.setSession(session)),
     );
   }
 
   logout() {
     return this.refreshCsrf().pipe(
       switchMap(() => this.http.post<void>('/api/auth/logout', {}).pipe(timeout(15000))),
-      catchError(error => error?.status === 401 ? of(undefined) : throwError(() => error)),
-      tap(() => this.clear())
+      catchError((error) => (error?.status === 401 ? of(undefined) : throwError(() => error))),
+      tap(() => this.clear()),
     );
   }
 
@@ -80,16 +98,16 @@ export class AuthService {
     this.csrfToken = '';
     this.csrfRequest = this.http.get<{ headerName: string; token: string }>('/api/auth/csrf').pipe(
       timeout(15000),
-      map(response => {
+      map((response) => {
         if (!response.token) throw new Error('El servidor no devolvió el token de sesión.');
         return response.token;
       }),
-      tap(token => {
+      tap((token) => {
         this.csrfToken = token;
         this.csrfRequest = undefined;
       }),
-      finalize(() => this.csrfRequest = undefined),
-      shareReplay({ bufferSize: 1, refCount: true })
+      finalize(() => (this.csrfRequest = undefined)),
+      shareReplay({ bufferSize: 1, refCount: true }),
     );
     return this.csrfRequest;
   }

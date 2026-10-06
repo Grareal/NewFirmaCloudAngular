@@ -11,16 +11,24 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const authenticatedRequest = request.clone({ withCredentials: true });
   const changesData = !['GET', 'HEAD', 'OPTIONS'].includes(request.method);
   const response = changesData
-    ? auth.ensureCsrf().pipe(switchMap(token => next(authenticatedRequest.clone({
-        setHeaders: { 'X-XSRF-TOKEN': token }
-      }))))
+    ? auth.ensureCsrf().pipe(
+        switchMap((token) =>
+          next(
+            authenticatedRequest.clone({
+              setHeaders: { 'X-XSRF-TOKEN': token },
+            }),
+          ),
+        ),
+      )
     : next(authenticatedRequest);
-  return response.pipe(catchError(error => {
-    const isAuthenticationCall = request.url.includes('/api/auth/');
-    if (error?.status === 401 && !isAuthenticationCall) {
-      auth.clear();
-      void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
-    }
-    return throwError(() => error);
-  }));
+  return response.pipe(
+    catchError((error) => {
+      const isAuthenticationCall = request.url.includes('/api/auth/');
+      if (error?.status === 401 && !isAuthenticationCall) {
+        auth.clear();
+        void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
+      }
+      return throwError(() => error);
+    }),
+  );
 };

@@ -1,5 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClient, provideHttpClient, withInterceptors, withNoXsrfProtection } from '@angular/common/http';
+import {
+  HttpClient,
+  provideHttpClient,
+  withInterceptors,
+  withNoXsrfProtection,
+} from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -13,11 +18,13 @@ describe('Session and ASP.NET antiforgery', () => {
   const session = { username: 'test', displayName: 'Test', role: 'Admin', permissions: [] };
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [
-      provideRouter([]),
-      provideHttpClient(withNoXsrfProtection(), withInterceptors([authInterceptor])),
-      provideHttpClientTesting()
-    ] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(withNoXsrfProtection(), withInterceptors([authInterceptor])),
+        provideHttpClientTesting(),
+      ],
+    });
     auth = TestBed.inject(AuthService);
     http = TestBed.inject(HttpClient);
     requests = TestBed.inject(HttpTestingController);

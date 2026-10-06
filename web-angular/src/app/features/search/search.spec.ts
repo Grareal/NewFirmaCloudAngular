@@ -6,12 +6,18 @@ import { ApiService } from '../../core/api.service';
 
 describe('Search rendering', () => {
   it('updates the result and releases the button after an asynchronous response without another click', async () => {
-    TestBed.configureTestingModule({ providers: [
-      provideRouter([]), provideZoneChangeDetection(),
-      { provide: ApiService, useValue: {
-        searchReservations: () => new Promise(resolve => setTimeout(() => resolve([]), 10))
-      } }
-    ] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideZoneChangeDetection(),
+        {
+          provide: ApiService,
+          useValue: {
+            searchReservations: () => new Promise((resolve) => setTimeout(() => resolve([]), 10)),
+          },
+        },
+      ],
+    });
     const fixture = TestBed.createComponent(SearchComponent);
     fixture.autoDetectChanges();
     fixture.componentInstance.term = 'test';

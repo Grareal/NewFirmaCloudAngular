@@ -7,7 +7,7 @@ import { ApiService } from './core/api.service';
   selector: 'app-root',
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.css',
 })
 export class App {
   auth = inject(AuthService);
@@ -25,13 +25,17 @@ export class App {
   loadEnvironment() {
     this.connectionError = '';
     this.api.getEnvironment().then(
-      info => this.env = info.isUat ? 'UAT' : info.environment,
-      () => this.connectionError = 'No se pudo conectar con el servidor.'
+      (info) => (this.env = info.isUat ? 'UAT' : info.environment),
+      () => (this.connectionError = 'No se pudo conectar con el servidor.'),
     );
   }
 
-  has(p: string) { return this.auth.hasPermission(p) || this.auth.role === 'Admin'; }
-  get initial() { return (this.auth.displayName || 'U').slice(0, 1).toUpperCase(); }
+  has(p: string) {
+    return this.auth.hasPermission(p) || this.auth.role === 'Admin';
+  }
+  get initial() {
+    return (this.auth.displayName || 'U').slice(0, 1).toUpperCase();
+  }
   closeNavigation(event: Event) {
     if ((event.target as HTMLElement).closest('a')) this.menuOpen = false;
   }
@@ -39,13 +43,20 @@ export class App {
     this.logoutError = '';
     this.auth.logout().subscribe({
       next: () => void this.router.navigate(['/login']),
-      error: () => this.logoutError = 'No se pudo cerrar la sesión en el servidor. Intenta nuevamente.'
+      error: () =>
+        (this.logoutError = 'No se pudo cerrar la sesión en el servidor. Intenta nuevamente.'),
     });
   }
   get showNav() {
     let route = this.router.routerState.snapshot.root;
     while (route.firstChild) route = route.firstChild;
-    return this.auth.isAuthenticated && !this.router.url.startsWith('/login') && route.data['layout'] !== 'guest';
+    return (
+      this.auth.isAuthenticated &&
+      !this.router.url.startsWith('/login') &&
+      route.data['layout'] !== 'guest'
+    );
   }
-  get isUat() { return this.env === 'UAT'; }
+  get isUat() {
+    return this.env === 'UAT';
+  }
 }

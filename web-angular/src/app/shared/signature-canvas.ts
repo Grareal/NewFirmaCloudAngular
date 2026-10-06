@@ -15,15 +15,31 @@ export class SignatureCanvasComponent implements AfterViewInit {
   ngAfterViewInit() {
     const c = this.cv.nativeElement;
     this.ctx = c.getContext('2d')!;
-    this.ctx.lineWidth = 2.5; this.ctx.lineCap = 'round';
+    this.ctx.lineWidth = 2.5;
+    this.ctx.lineCap = 'round';
     this.ctx.strokeStyle = '#003E55';
     const pos = (e: PointerEvent) => {
       const r = c.getBoundingClientRect();
-      return { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) };
+      return {
+        x: (e.clientX - r.left) * (c.width / r.width),
+        y: (e.clientY - r.top) * (c.height / r.height),
+      };
     };
-    c.addEventListener('pointerdown', e => { this.drawing = true; const p = pos(e); this.ctx.beginPath(); this.ctx.moveTo(p.x, p.y); c.setPointerCapture(e.pointerId); });
-    c.addEventListener('pointermove', e => { if (!this.drawing) return; const p = pos(e); this.ctx.lineTo(p.x, p.y); this.ctx.stroke(); this.hasInk = true; });
-    c.addEventListener('pointerup', () => this.drawing = false);
+    c.addEventListener('pointerdown', (e) => {
+      this.drawing = true;
+      const p = pos(e);
+      this.ctx.beginPath();
+      this.ctx.moveTo(p.x, p.y);
+      c.setPointerCapture(e.pointerId);
+    });
+    c.addEventListener('pointermove', (e) => {
+      if (!this.drawing) return;
+      const p = pos(e);
+      this.ctx.lineTo(p.x, p.y);
+      this.ctx.stroke();
+      this.hasInk = true;
+    });
+    c.addEventListener('pointerup', () => (this.drawing = false));
   }
 
   getPng(): string | null {
